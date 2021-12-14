@@ -79,7 +79,17 @@ export default class BotClient extends Client {
     const output: quiz = {
       playing: false,
       nowplaying: null,
-      queue: []
+      queue: [],
+      type: '',
+      page: {
+        go: null,
+        page: [],
+        list: [],
+        maxpage: 0,
+        now: 0,
+        first: true,
+        player: null
+      }
     };
     this.quiz.set(guildId, output);
     return output;
@@ -97,7 +107,7 @@ export default class BotClient extends Client {
     footer?: { text: string, iconURL?: string },
     color?: ColorResolvable
   }): MessageEmbed {
-    const embed = new MessageEmbed();
+    const embed = new MessageEmbed().setColor(this.embedcolor);
     if (data.title) embed.setTitle(data.title);
     if (data.description) embed.setDescription(data.description);
     if (data.url) embed.setURL(data.url);

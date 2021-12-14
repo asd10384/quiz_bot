@@ -5,7 +5,6 @@ import BotClient from './BotClient';
 import { Command } from '../interfaces/Command';
 import { client } from '..';
 import MDB from "../database/Mongodb";
-import quiz from '../quiz/quiz';
 
 export default class SlashHandler {
   public commands: Collection<string, Command>;
@@ -77,7 +76,13 @@ export default class SlashHandler {
       MDB.get.guild(message).then((guildID) => {
         if (guildID!.channelId === message.channelId) {
           client.msgdelete(message, 350, true);
-          quiz(message, message.content.trim());
+          const quizDB = client.quizdb(message.guildId!);
+          if (quizDB.playing) {
+            // 정답
+          } else {
+            const command = this.commands.get("퀴즈");
+            if (command && command.msgrun) command.msgrun(message, message.content.trim().split(/ +/g));
+          }
         }
       });
     }

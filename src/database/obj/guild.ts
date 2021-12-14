@@ -7,6 +7,15 @@ export interface quiz {
   playing: boolean;
   nowplaying: nowplay | null;
   queue: nowplay[];
+  page: {
+    go: boolean | null;
+    page: string[];
+    now: number;
+    first: boolean;
+    list: string[];
+    maxpage: number;
+    player: string | null;
+  }
 };
 
 export interface nowplay {
@@ -55,4 +64,4 @@ const GuildSchema: Schema = new Schema({
   }
 });
 
-export const guild_model = model<guild_type>(`Guild${(process.env.BOT_NUMBER) ? process.env.BOT_NUMBER : ''}`, GuildSchema);
+export const guild_model = model<guild_type>(`GuildBot`, GuildSchema);

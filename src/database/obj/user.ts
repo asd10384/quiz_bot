@@ -16,4 +16,4 @@ const UserSchema: Schema = new Schema({
   canplay: { type: Boolean }
 });
 
-export const user_model = model<user_type>(`User${(process.env.BOT_NUMBER) ? process.env.BOT_NUMBER : ''}`, UserSchema);
+export const user_model = model<user_type>(`UserBot`, UserSchema);

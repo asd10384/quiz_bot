@@ -5,9 +5,10 @@ import { I, D, M } from "../aliases/discord.js.js";
 import { MessageActionRow, MessageButton, MessageEmbed, TextChannel } from "discord.js";
 import MDB from "../database/Mongodb";
 import { guild_type } from "../database/obj/guild";
-import stop from "../quiz/stop";
 import { config } from "dotenv";
 import { QUIZ_RULE } from "../config";
+import quiz_start from "../quiz/start";
+import quiz_stop from "../quiz/stop";
 config();
 
 /**
@@ -51,7 +52,7 @@ export default class 퀴즈Command implements Command {
   /** 실행되는 부분 */
   async slashrun(interaction: I) {
     const cmd = interaction.options.getSubcommand();
-    if (cmd === 'create_channel') {
+    if (cmd === '채널생성') {
       if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
       let guildDB = await MDB.get.guild(interaction);
       return await interaction.editReply({ content: await this.create_channel(interaction, guildDB!) });
@@ -70,11 +71,27 @@ export default class 퀴즈Command implements Command {
   }
 
   async msgrun(message: M, args: string[]): Promise<any> {
-    if (args[0] === "시작") return;
-    if (args[0] === "중지") return;
+    if (args[0] === "시작") {
+      const quizDB = client.quizdb(message.guildId!);
+      if (quizDB.page.player) {
+        return message.channel.send({ embeds: [
+          client.mkembed({
+            title: `**퀴즈 시작 오류**`,
+            description: `이미 퀴즈가 시작되었습니다.`,
+            color: "DARK_RED"
+          })
+        ] }).then(m => client.msgdelete(m, 1));
+      }
+      return quiz_start(message);
+    }
+    if (args[0] === "중지" || args[0] === "종료") return quiz_stop(message);
     if (args[0] === "설정") return;
     if (args[0] === "스킵") return;
     if (args[0] === "힌트") return;
+    if (args[0] === "fix") {
+      const guildDB = await MDB.get.guild(message);
+      return this.fix(message, guildDB!);
+    }
     if (args[0] === "도움말" || args[0] === "help") return message.channel.send({ embeds: [ this.help() ] }).then(m => client.msgdelete(m, 4.5));
     return;
   }
