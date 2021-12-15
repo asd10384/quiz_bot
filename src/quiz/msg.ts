@@ -34,11 +34,11 @@ function setembed(guildDB: guild_type): MessageEmbed {
     footer: { text: `${client.prefix}퀴즈 도움말` }
   });
   if (quizDB.playing) {
-    if (data.anser) {
-      embed.setTitle(`**정답: ${data.title}**`)
-        .setURL(data.url)
-        .setDescription(`**가수: ${data.author}**\n**정답자: ${data.player}**`)
-        .setImage(data.image);
+    if (quizDB.anser) {
+      embed.setTitle(`**정답: ${data.name}**`)
+        .setURL(data.link)
+        .setDescription(`**가수: ${data.vocal}**\n**정답자: <@${quizDB.anser}>**`)
+        .setImage(quizDB.image);
     } else {
       embed.setTitle(`**정답: ???**`)
         .setDescription(`**가수: ???**\n**정답자: ???**`)

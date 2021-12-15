@@ -4,6 +4,8 @@ import { M, PM } from "../aliases/discord.js.js";
 import MDB from "../database/Mongodb";
 import setmsg from "./msg";
 import { TextChannel } from "discord.js";
+import { reset_skip } from "./skip";
+import { reset_hint } from "./hint";
 
 export default async function quiz_stop(message: M | PM) {
   let guildDB = await MDB.module.guild.findOne({ id: message.guildId! });
@@ -15,14 +17,11 @@ export default async function quiz_stop(message: M | PM) {
   quizDB.playing = false;
   quizDB.queue = [];
   quizDB.nowplaying = {
-    anser: false,
-    author: '',
-    duration: '',
-    player: '',
-    title: '',
-    url: '',
-    image: ''
+    name: "",
+    vocal: "",
+    link: ""
   };
+  quizDB.count = [ 1, 1 ];
   quizDB.page = {
     first: true,
     go: null,
@@ -32,6 +31,9 @@ export default async function quiz_stop(message: M | PM) {
     player: null,
     maxpage: 1
   };
+  quizDB.score.clear();
+  reset_skip(message.guildId!, false);
+  reset_hint(message.guildId!, false);
   client.quiz.set(message.guildId!, quizDB);
   setmsg(message);
   getVoiceConnection(message.guildId!)?.disconnect();

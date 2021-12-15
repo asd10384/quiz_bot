@@ -5,6 +5,7 @@ import BotClient from './BotClient';
 import { Command } from '../interfaces/Command';
 import { client } from '..';
 import MDB from "../database/Mongodb";
+import quiz_anser from '../quiz/anser';
 
 export default class SlashHandler {
   public commands: Collection<string, Command>;
@@ -78,7 +79,10 @@ export default class SlashHandler {
           client.msgdelete(message, 350, true);
           const quizDB = client.quizdb(message.guildId!);
           if (quizDB.playing) {
-            // 정답
+            const text = message.content.trim().replace(/ +/g, " ").toLowerCase();
+            if (text === "스킵" || text === "skip") return message.channel.send({ content: "현재 제작중 입니다." }).then(m => client.msgdelete(m, 1)); // 스킵 명령어
+            if (text === "힌트" || text === "hint") return message.channel.send({ content: "현재 제작중 입니다." }).then(m => client.msgdelete(m, 1)); // 힌트 명령어
+            if (text === quizDB.nowplaying?.name.toLowerCase()) quiz_anser(message, [], message.author.id);
           } else {
             const command = this.commands.get("퀴즈");
             if (command && command.msgrun) command.msgrun(message, message.content.trim().split(/ +/g));

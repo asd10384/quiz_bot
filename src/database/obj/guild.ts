@@ -1,12 +1,17 @@
 import { config } from "dotenv";
 import { Document, model, Schema } from "mongoose";
+import { page_data } from "../../quiz/type";
 config();
 
 export interface quiz {
-  type: string;
+  score: Map<string, number>;
+  anser: string | null;
+  image: string;
+  type: page_data;
   playing: boolean;
   nowplaying: nowplay | null;
   queue: nowplay[];
+  count: [ number, number ];
   page: {
     go: boolean | null;
     page: string[];
@@ -19,13 +24,9 @@ export interface quiz {
 };
 
 export interface nowplay {
-  anser: boolean;
-  title: string;
-  author: string;
-  duration: string;
-  url: string;
-  image: string;
-  player: string;
+  name: string;
+  vocal: string;
+  link: string;
 };
 
 export interface guild_type extends Document {

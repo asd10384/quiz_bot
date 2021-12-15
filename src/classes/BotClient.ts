@@ -77,10 +77,22 @@ export default class BotClient extends Client {
   public quizdb = (guildId: string): quiz => {
     if (this.quiz.get(guildId)) return this.quiz.get(guildId)!;
     const output: quiz = {
+      score: new Map(),
+      anser: null,
+      image: "",
       playing: false,
       nowplaying: null,
       queue: [],
-      type: '',
+      type: {
+        complite: 0,
+        customimg: false,
+        desc: "",
+        quiz: "",
+        space: true,
+        start: false,
+        url: ""
+      },
+      count: [ 1, 1 ],
       page: {
         go: null,
         page: [],

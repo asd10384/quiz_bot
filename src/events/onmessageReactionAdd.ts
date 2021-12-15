@@ -2,6 +2,8 @@ import { client } from '..';
 import { MessageReaction, PartialMessageReaction, PartialUser, User } from 'discord.js';
 import MDB from "../database/Mongodb";
 import quiz_start from '../quiz/start';
+import { quiz_skip } from '../quiz/skip';
+import { quiz_hint } from '../quiz/hint';
 
 export default async function onmessageReactionAdd (reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) {
   if (user.bot) return;
@@ -33,7 +35,7 @@ export default async function onmessageReactionAdd (reaction: MessageReaction | 
       if (quizDB.page.now < 0) quizDB.page.now = 0;
       if (quizDB.page.now > quizDB.page.maxpage) quizDB.page.now = quizDB.page.maxpage;
       client.quiz.set(reaction.message.guildId, quizDB);
-      quiz_start(reaction.message);
+      quiz_start(reaction.message, user.id);
     }
     if (["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"].includes(name)) {
       var number = smallnum(name);
@@ -51,7 +53,7 @@ export default async function onmessageReactionAdd (reaction: MessageReaction | 
       if (quizDB.page.list.length >= (pp*5)+number) {
         quizDB.page.page.push(quizDB.page.list[(pp*5)+number-1]);
         client.quiz.set(reaction.message.guildId, quizDB);
-        quiz_start(reaction.message);
+        quiz_start(reaction.message, user.id);
       }
       client.quiz.set(reaction.message.guildId, quizDB);
     }
@@ -64,7 +66,16 @@ export default async function onmessageReactionAdd (reaction: MessageReaction | 
         quizDB.page.page.pop();
       }
       client.quiz.set(reaction.message.guildId, quizDB);
-      quiz_start(reaction.message);
+      quiz_start(reaction.message, user.id);
+    }
+    reaction.users.remove(user.id);
+  }
+  if (quizDB.playing) {
+    if (name === "⏭️") {
+      quiz_skip(reaction.message, user.id);
+    }
+    if (name === "💡") {
+      quiz_hint(reaction.message, user.id);
     }
     reaction.users.remove(user.id);
   }

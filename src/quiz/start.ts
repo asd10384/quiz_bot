@@ -5,28 +5,12 @@ import MDB from "../database/Mongodb";
 import { config } from "dotenv";
 import { TextChannel } from "discord.js";
 import { QUIZ_RULE } from "../config";
+import setquiz from "./setquiz";
+import { page_data, page } from "./type";
 config();
 if (!process.env.MUSIC_SITE || process.env.MUSIC_SITE === "") throw "MUSIC_SITE를 찾을수 없습니다.";
 
-interface page_data {
-  url: string;
-  desc: string;
-  quiz: string;
-  customimg: string;
-  space: boolean;
-  complite: number;
-  start: boolean;
-};
-
-interface page {
-  [key: string]: {
-    [key: string]: {
-      [key: string]: page_data;
-    }
-  }
-};
-
-export default async function quiz_start(message: M | PM) {
+export default async function quiz_start(message: M | PM, userId: string) {
   const guildDB = await MDB.get.guild(message);
   const quizDB = client.quizdb(message.guildId!);
   const music_list = `${process.env.MUSIC_SITE}/music_list.js`;
@@ -51,7 +35,12 @@ export default async function quiz_start(message: M | PM) {
     }
     if (quizDB.page.go !== null) {
       if (quizDB.page.go) {
-        // go
+        getvalue = data[quizDB.page.page[0]][quizDB.page.page[1]][quizDB.page.page[2]];
+        quizDB.type = getvalue;
+        msg?.reactions.removeAll();
+        msg?.react("💡");
+        msg?.react("⏭️");
+        setquiz(message, getvalue, userId);
       } else {
         quizDB.page.go = null;
         quizDB.page.page.pop();

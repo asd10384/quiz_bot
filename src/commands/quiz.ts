@@ -9,6 +9,8 @@ import { config } from "dotenv";
 import { QUIZ_RULE } from "../config";
 import quiz_start from "../quiz/start";
 import quiz_stop from "../quiz/stop";
+import { getuserchannel } from "../quiz/getchannel";
+import quiz_anser from "../quiz/anser";
 config();
 
 /**
@@ -82,12 +84,29 @@ export default class 퀴즈Command implements Command {
           })
         ] }).then(m => client.msgdelete(m, 1));
       }
-      return quiz_start(message);
+      if (!getuserchannel(message.member!)) return message.channel.send({ embeds: [
+        client.mkembed({
+          title: `\` 음성 오류 \``,
+          description: `먼저 음성채널에 들어간뒤 사용해주세요.`,
+          color: "DARK_RED"
+        })
+      ] }).then(m => client.msgdelete(m, 1));
+      return quiz_start(message, message.author.id);
     }
     if (args[0] === "중지" || args[0] === "종료") return quiz_stop(message);
-    if (args[0] === "설정") return;
-    if (args[0] === "스킵") return;
-    if (args[0] === "힌트") return;
+    if (args[0] === "설정") {
+      if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] }).then(m => client.msgdelete(m, 1));
+      return message.channel.send({ content: "현재 제작중 입니다." }).then(m => client.msgdelete(m, 1));
+    }
+    if (args[0] === "스킵") {
+      if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] }).then(m => client.msgdelete(m, 1));
+      return quiz_anser(message, ["스킵", "관리자"], message.author.id);
+    }
+    if (args[0] === "힌트") {
+      if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] }).then(m => client.msgdelete(m, 1));
+      // 힌트 명령어
+      return message.channel.send({ content: "현재 제작중 입니다." }).then(m => client.msgdelete(m, 1));
+    }
     if (args[0] === "fix") {
       const guildDB = await MDB.get.guild(message);
       return this.fix(message, guildDB!);
