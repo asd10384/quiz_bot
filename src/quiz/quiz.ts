@@ -11,6 +11,7 @@ import internal from "stream";
 import { reset_skip } from "./skip";
 import { reset_hint } from "./hint";
 import quiz_anser from "./anser";
+import bulkmessage from "./bulkmessage";
 
 const proxy = process.env.PROXY;
 let agent: HttpsProxyAgent | undefined = undefined;
@@ -32,13 +33,15 @@ export default async function quiz(message: M | PM, userId: string) {
   if (quizDB.count[0] > quizDB.count[1]) return quiz_stop(message);
   const data = quizDB.queue.shift();
   if (!data) return quiz_stop(message);
+  quizDB.nowplaying = data;
+  quizDB.playing = true;
+  quizDB.anser = null;
   quizDB.image = (quizDB.type.customimg) 
     ? `${process.env.MUSIC_SITE}/customimg/${quizDB.page.page.slice(0,-1).join("/")}/${quizDB.nowplaying?.name}.png`
     || `${process.env.MUSIC_SITE}/customimg/${quizDB.page.page.slice(0,-1).join("/")}/${quizDB.nowplaying?.name}.png`
     : `https://img.youtube.com/vi/${quizDB.nowplaying?.link.replace("https://youtu.be/","")}/sddefault.jpg`;
-  quizDB.nowplaying = data;
-  quizDB.playing = true;
   client.quiz.set(message.guildId!, quizDB);
+  bulkmessage(message);
   setmsg(message);
   if (!connection) connection = joinVoiceChannel({
     adapterCreator: message.guild!.voiceAdapterCreator!,
@@ -48,10 +51,10 @@ export default async function quiz(message: M | PM, userId: string) {
   const Player = createAudioPlayer();
   var ytsource: internal.Readable | undefined = undefined;
   try {
-    ytsource = ytdl("https://www.youtube.com/watch?v=" + quizDB.nowplaying.link.replace("https://youtu.be/",""), {
+    if (client.debug) console.log(`${message.guild?.name} {\n  number: ${quizDB.count[0]}\n  name: ${quizDB.nowplaying.vocal}-${quizDB.nowplaying.name}\n  link: ${quizDB.nowplaying.link}\n}`);
+    ytsource = ytdl(quizDB.nowplaying.link, {
       filter: "audioonly",
       quality: "highestaudio",
-      highWaterMark: 1 << 27,
       requestOptions: { agent }
     }).on("error", (err) => {
       if (client.debug) console.log("ytdl-core오류1:", err);
@@ -59,7 +62,7 @@ export default async function quiz(message: M | PM, userId: string) {
     });
   } catch {}
   if (!ytsource) {
-    // 영상 오류로 스킵
+    quiz_anser(message, ["스킵", "오류"], userId);
   }
   try {
     await entersState(connection, VoiceConnectionStatus.Ready, 30_000);

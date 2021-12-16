@@ -45,8 +45,8 @@ export default class BotClient extends Client {
       if (dtime < 100) dtime = 100;
       setTimeout(() => {
         try {
-          message.delete()
-        } catch(err) {}
+          message.delete().catch(() => {});
+        } catch {}
       }, dtime);
     };
     this.ttstimer = new Map<string, { start: boolean, time: number }>();

@@ -8,7 +8,6 @@ const skip: Map<string, string[]> = new Map();
 const can: Map<string, boolean> = new Map();
 
 export async function quiz_skip(message: M | PM, userId: string) {
-  if (!can.get(message.guildId!)) return;
   var channel = getbotchannel(message);
   if (!channel) return quiz_stop(message);
   var userchannel = getuserchannel(message.guild?.members.cache.get(userId));
@@ -19,6 +18,7 @@ export async function quiz_skip(message: M | PM, userId: string) {
       color: "DARK_RED"
     })
   ] }).then(m => client.msgdelete(m, 1));
+  if (!can.get(message.guildId!)) return;
   const maxmember = channel.members.size-1;
   if (skip.get(message.guildId!)?.includes(userId)) return message.channel.send({ embeds: [
     client.mkembed({
@@ -28,7 +28,7 @@ export async function quiz_skip(message: M | PM, userId: string) {
   ] }).then(m => client.msgdelete(m, 1));
   var list = skip.get(message.guildId!) || [];
   list.push(userId);
-  if (list.length > Math.floor(maxmember / 2)) {
+  if (list.length >= Math.floor(maxmember / 2)) {
     reset_skip(message.guildId!, false);
     return quiz_anser(message, ["스킵"], userId);
   }

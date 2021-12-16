@@ -169,6 +169,7 @@ export default class 퀴즈Command implements Command {
   async fix(message: M | I, guildDB: guild_type): Promise<string> {
     let channel = message.guild?.channels.cache.get(guildDB.channelId);
     if (channel) {
+      quiz_stop(message, true);
       await (channel as TextChannel).messages.fetch().then((msg) => {
         try {
           if (msg.size > 0) (channel as TextChannel).bulkDelete(msg.size).catch((err) => { if (client.debug) console.log('메세지 전체 삭제 오류'); });

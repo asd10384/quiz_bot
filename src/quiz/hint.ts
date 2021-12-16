@@ -6,9 +6,9 @@ import quiz_stop from "./stop";
 
 const hint: Map<string, string[]> = new Map();
 const can: Map<string, boolean> = new Map();
+const al: Map<string, boolean> = new Map();
 
 export async function quiz_hint(message: M | PM, userId: string) {
-  if (!can.get(message.guildId!)) return;
   var channel = getbotchannel(message);
   if (!channel) return quiz_stop(message);
   var userchannel = getuserchannel(message.guild?.members.cache.get(userId));
@@ -19,6 +19,14 @@ export async function quiz_hint(message: M | PM, userId: string) {
       color: "DARK_RED"
     })
   ] }).then(m => client.msgdelete(m, 1));
+  if (al.get(message.guildId!)) return message.channel.send({ embeds: [
+    client.mkembed({
+      title: `**힌트 오류**`,
+      description: `이미 힌트를 받으셨습니다.`,
+      color: "DARK_RED"
+    })
+  ] }).then(m => client.msgdelete(m, 1));
+  if (!can.get(message.guildId!)) return;
   const maxmember = channel.members.size-1;
   if (hint.get(message.guildId!)?.includes(userId)) return message.channel.send({ embeds: [
     client.mkembed({
@@ -28,10 +36,10 @@ export async function quiz_hint(message: M | PM, userId: string) {
   ] }).then(m => client.msgdelete(m, 1));
   var list = hint.get(message.guildId!) || [];
   list.push(userId);
-  if (list.length > Math.floor(maxmember / 2)) {
+  if (list.length >= Math.floor(maxmember / 2)) {
     reset_hint(message.guildId!, false);
     const quizDB = client.quizdb(message.guildId!);
-    var name = quizDB.nowplaying?.name;
+    var name = quizDB.nowplaying?.name.trim().replace(/ +/g,' ');
     if (!name) return;
     var ilist: number[] = [];
     for (let i=0; i<name.length; i++) {
@@ -43,13 +51,17 @@ export async function quiz_hint(message: M | PM, userId: string) {
     var blist = ilist.slice(0, Math.floor(ilist.length / 2));
     var text = "";
     for (let i=0; i<name.length; i++) {
-      if (blist.includes(i)) text += `◻️`;
+      if (blist.includes(i)) {
+        text += `◻️`;
+        continue;
+      }
       text += name[i];
     }
+    al.set(message.guildId!, true);
     return message.channel.send({ embeds: [
       client.mkembed({
         title: `**\` 힌트 \`**`,
-        description: text
+        description: text.toUpperCase()
       })
     ] });
   }
@@ -65,4 +77,5 @@ export async function quiz_hint(message: M | PM, userId: string) {
 export function reset_hint(guildId: string, on: boolean) {
   hint.set(guildId, []);
   can.set(guildId, on);
+  al.set(guildId, false);
 }

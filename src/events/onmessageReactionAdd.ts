@@ -19,6 +19,15 @@ export default async function onmessageReactionAdd (reaction: MessageReaction | 
   const name = reaction.emoji.name;
   if (!name) return;
   if (reaction.message.channelId === guildDB.channelId) {
+    if (quizDB.playing) {
+      if (name === "⏭️") {
+        quiz_skip(reaction.message, user.id);
+      }
+      if (name === "💡") {
+        quiz_hint(reaction.message, user.id);
+      }
+      return reaction.users.remove(user.id);
+    }
     if (quizDB.page.player !== null && quizDB.page.player !== user.id) {
       reaction.message.channel.send({ embeds: [
         client.mkembed({
@@ -67,15 +76,6 @@ export default async function onmessageReactionAdd (reaction: MessageReaction | 
       }
       client.quiz.set(reaction.message.guildId, quizDB);
       quiz_start(reaction.message, user.id);
-    }
-    reaction.users.remove(user.id);
-  }
-  if (quizDB.playing) {
-    if (name === "⏭️") {
-      quiz_skip(reaction.message, user.id);
-    }
-    if (name === "💡") {
-      quiz_hint(reaction.message, user.id);
     }
     reaction.users.remove(user.id);
   }

@@ -6,6 +6,8 @@ import { Command } from '../interfaces/Command';
 import { client } from '..';
 import MDB from "../database/Mongodb";
 import quiz_anser from '../quiz/anser';
+import { quiz_skip } from '../quiz/skip';
+import { quiz_hint } from '../quiz/hint';
 
 export default class SlashHandler {
   public commands: Collection<string, Command>;
@@ -76,14 +78,14 @@ export default class SlashHandler {
     } else {
       MDB.get.guild(message).then((guildID) => {
         if (guildID!.channelId === message.channelId) {
-          client.msgdelete(message, 350, true);
           const quizDB = client.quizdb(message.guildId!);
           if (quizDB.playing) {
             const text = message.content.trim().replace(/ +/g, " ").toLowerCase();
-            if (text === "스킵" || text === "skip") return message.channel.send({ content: "현재 제작중 입니다." }).then(m => client.msgdelete(m, 1)); // 스킵 명령어
-            if (text === "힌트" || text === "hint") return message.channel.send({ content: "현재 제작중 입니다." }).then(m => client.msgdelete(m, 1)); // 힌트 명령어
+            if (text === "스킵" || text === "skip") return quiz_skip(message, message.author.id);
+            if (text === "힌트" || text === "hint") return quiz_hint(message, message.author.id);
             if (text === quizDB.nowplaying?.name.toLowerCase()) quiz_anser(message, [], message.author.id);
           } else {
+            client.msgdelete(message, 350, true);
             const command = this.commands.get("퀴즈");
             if (command && command.msgrun) command.msgrun(message, message.content.trim().split(/ +/g));
           }

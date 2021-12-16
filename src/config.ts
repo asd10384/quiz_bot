@@ -13,7 +13,8 @@ export function QUIZ_RULE(guildDB: guild_type): string {
     `오류나 수정사항은 **\` tmdgks0466@naver.com \`**으로 보내주세요.
       
     퀴즈 도중 봇이 멈추거나 오류가 생겼다면
-    퀴즈를 종료하고 다시 시작해주세요. (${client.prefix}퀴즈 종료)
+    퀴즈를 종료하고 다시 시작하거나, (**${client.prefix}퀴즈 종료**)
+    **${client.prefix}퀴즈 fix**를 입력해주세요.
     
     음성 채널에 참여한 후 **\` ${client.prefix}퀴즈 시작 \`**을 입력해 퀴즈를 시작하세요.`
   ];
