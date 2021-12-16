@@ -27,6 +27,7 @@ export interface nowplay {
   name: string;
   vocal: string;
   link: string;
+  realnumber: number;
 };
 
 export interface guild_type extends Document {

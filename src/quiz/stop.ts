@@ -20,7 +20,8 @@ export default async function quiz_stop(message: M | PM | I, no?: boolean) {
   quizDB.nowplaying = {
     name: "",
     vocal: "",
-    link: ""
+    link: "",
+    realnumber: 0
   };
   quizDB.count = [ 1, 1 ];
   quizDB.page = {

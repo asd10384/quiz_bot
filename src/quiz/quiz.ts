@@ -51,7 +51,7 @@ export default async function quiz(message: M | PM, userId: string) {
   const Player = createAudioPlayer();
   var ytsource: internal.Readable | undefined = undefined;
   try {
-    if (client.debug) console.log(`${message.guild?.name} {\n  number: ${quizDB.count[0]}\n  name: ${quizDB.nowplaying.vocal}-${quizDB.nowplaying.name}\n  link: ${quizDB.nowplaying.link}\n}`);
+    if (client.debug) console.log(`${message.guild?.name} {\n  get: ${quizDB.page.page.slice(0,-1).join("/")}\n  number: ${quizDB.count[0]}\n  realnumber: ${quizDB.nowplaying.realnumber+1}\n  name: ${quizDB.nowplaying.vocal}-${quizDB.nowplaying.name}\n  link: ${quizDB.nowplaying.link}\n}`);
     ytsource = ytdl(quizDB.nowplaying.link, {
       filter: "audioonly",
       quality: "highestaudio",

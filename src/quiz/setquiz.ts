@@ -6,7 +6,7 @@ import { page_data } from "./type";
 import { M, PM } from "../aliases/discord.js";
 import quiz from "./quiz";
 
-type htmllist = { name: string, vocal: string, link: string; }[];
+type htmllist = { name: string, vocal: string, link: string; realnumber: number; }[];
 
 export default async function setquiz(message: M | PM, getvalue: page_data, userId: string) {
   request(getvalue.url.toLowerCase().replace(/ㄱ-ㅎ|ㅏ-ㅣ|가-힣|\s/g, encodeURIComponent), async (err, res, html) => {
@@ -16,7 +16,8 @@ export default async function setquiz(message: M | PM, getvalue: page_data, user
       first.push({
         name: ($(el).children("a.name").text().trim()),
         vocal: ($(el).children("a.vocal").text().trim()),
-        link: ($(el).children("a.link").text().trim())
+        link: ($(el).children("a.link").text().trim()),
+        realnumber: 0
       });
     });
     var second: htmllist = [];
@@ -30,7 +31,8 @@ export default async function setquiz(message: M | PM, getvalue: page_data, user
       second.push({
         name: first[count[i]]!.name,
         vocal: first[count[i]]!.vocal,
-        link: first[count[i]]!.link
+        link: first[count[i]]!.link,
+        realnumber: count[i]
       });
       logtext += `${i+1}. [${count[i]}] ${first[count[i]].vocal} - ${first[count[i]].name}\n`;
     }
