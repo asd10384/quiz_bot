@@ -2,7 +2,7 @@ import { client } from "..";
 import { check_permission as ckper, embed_permission as emper } from "../function/permission";
 import { Command } from "../interfaces/Command";
 import { I, D, M } from "../aliases/discord.js.js";
-import { MessageActionRow, MessageButton, MessageEmbed, TextChannel } from "discord.js";
+import { MessageEmbed, TextChannel } from "discord.js";
 import MDB from "../database/Mongodb";
 import { guild_type } from "../database/obj/guild";
 import { config } from "dotenv";
@@ -11,6 +11,7 @@ import quiz_start from "../quiz/start";
 import quiz_stop from "../quiz/stop";
 import { getuserchannel } from "../quiz/getchannel";
 import quiz_anser from "../quiz/anser";
+import { quiz_hint } from "../quiz/hint";
 config();
 
 /**
@@ -104,8 +105,7 @@ export default class 퀴즈Command implements Command {
     }
     if (args[0] === "힌트") {
       if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] }).then(m => client.msgdelete(m, 1));
-      // 힌트 명령어
-      return message.channel.send({ content: "현재 제작중 입니다." }).then(m => client.msgdelete(m, 1));
+      return quiz_hint(message, message.author.id, true);
     }
     if (args[0] === "fix") {
       const guildDB = await MDB.get.guild(message);
@@ -148,7 +148,7 @@ export default class 퀴즈Command implements Command {
       ]
     });
     const msg = await channel?.send({
-      content: QUIZ_RULE(guildDB!),
+      content: `${QUIZ_RULE(guildDB!)}.`,
       embeds: [
         client.mkembed({
           title: `**현재 퀴즈가 시작되지 않았습니다**`,
@@ -181,31 +181,33 @@ export default class 퀴즈Command implements Command {
         topic: `퀴즈 시작: ${client.prefix}퀴즈 시작`
       });
     }
-    const score = await (channel as TextChannel).send({
-      embeds: [
-        client.mkembed({
-          title: `**\` [ 퀴즈 스코어 ] \`**`,
-          description: `**1.** 없음\n\n스킵한 문제: 0개`,
-          footer: { text: "스코어는 다음퀴즈 전까지 사라지지 않습니다." }
-        })
-      ]
-    });
-    const msg = await (channel as TextChannel).send({
-      content: QUIZ_RULE(guildDB!),
-      embeds: [
-        client.mkembed({
-          title: `**현재 퀴즈가 시작되지 않았습니다**`,
-          description: `**정답설정: ${guildDB!.options.anser}**\n**다음문제시간: ${guildDB!.options.nexttime}초**`,
-          image: `https://ytms.netlify.app/defult.png`,
-          footer: { text: `${client.prefix}퀴즈 도움말` },
-          color: client.embedcolor
-        })
-      ]
-    });
-    guildDB!.channelId = channel?.id!;
-    guildDB!.scoreId = score?.id!;
-    guildDB!.msgId = msg?.id!;
-    await guildDB!.save().catch((err) => { if (client.debug) console.log('데이터베이스오류:', err) });
-    return `Error correction completed!`;
+    setTimeout(async () => {
+      const score = await (channel as TextChannel).send({
+        embeds: [
+          client.mkembed({
+            title: `**\` [ 퀴즈 스코어 ] \`**`,
+            description: `**1.** 없음\n\n스킵한 문제: 0개`,
+            footer: { text: "스코어는 다음퀴즈 전까지 사라지지 않습니다." }
+          })
+        ]
+      });
+      const msg = await (channel as TextChannel).send({
+        content: `${QUIZ_RULE(guildDB!)}.`,
+        embeds: [
+          client.mkembed({
+            title: `**현재 퀴즈가 시작되지 않았습니다**`,
+            description: `**정답설정: ${guildDB!.options.anser}**\n**다음문제시간: ${guildDB!.options.nexttime}초**`,
+            image: `https://ytms.netlify.app/defult.png`,
+            footer: { text: `${client.prefix}퀴즈 도움말` },
+            color: client.embedcolor
+          })
+        ]
+      });
+      guildDB!.channelId = channel?.id!;
+      guildDB!.scoreId = score?.id!;
+      guildDB!.msgId = msg?.id!;
+      await guildDB!.save().catch((err) => { if (client.debug) console.log('데이터베이스오류:', err) });
+    }, 350);
+    return `fix 실행 완료.`;
   }
 }

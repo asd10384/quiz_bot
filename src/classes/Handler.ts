@@ -73,7 +73,7 @@ export default class SlashHandler {
         if (client.debug) console.log(error); // 오류확인
         this.err(message, commandName);
       } finally {
-        client.msgdelete(message, 0);
+        client.msgdelete(message, 350, true);
       }
     } else {
       MDB.get.guild(message).then((guildID) => {

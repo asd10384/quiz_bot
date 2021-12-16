@@ -8,7 +8,7 @@ const hint: Map<string, string[]> = new Map();
 const can: Map<string, boolean> = new Map();
 const al: Map<string, boolean> = new Map();
 
-export async function quiz_hint(message: M | PM, userId: string) {
+export async function quiz_hint(message: M | PM, userId: string, admin?: boolean) {
   var channel = getbotchannel(message);
   if (!channel) return quiz_stop(message);
   var userchannel = getuserchannel(message.guild?.members.cache.get(userId));
@@ -27,7 +27,7 @@ export async function quiz_hint(message: M | PM, userId: string) {
     })
   ] }).then(m => client.msgdelete(m, 1));
   if (!can.get(message.guildId!)) return;
-  const maxmember = channel.members.size-1;
+  const maxmember = channel.members.size;
   if (hint.get(message.guildId!)?.includes(userId)) return message.channel.send({ embeds: [
     client.mkembed({
       title: `**\` 이미 투표하셨습니다. \`**`,
@@ -36,7 +36,7 @@ export async function quiz_hint(message: M | PM, userId: string) {
   ] }).then(m => client.msgdelete(m, 1));
   var list = hint.get(message.guildId!) || [];
   list.push(userId);
-  if (list.length >= Math.floor(maxmember / 2)) {
+  if (admin || list.length >= Math.floor(maxmember / 2)) {
     reset_hint(message.guildId!, false);
     const quizDB = client.quizdb(message.guildId!);
     var name = quizDB.nowplaying?.name.trim().replace(/ +/g,' ');

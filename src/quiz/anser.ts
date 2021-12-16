@@ -2,12 +2,16 @@ import { client } from "..";
 import { M, PM } from "../aliases/discord.js";
 import MDB from "../database/Mongodb";
 import bulkmessage from "./bulkmessage";
+import { reset_hint } from "./hint";
 import setmsg from "./msg";
 import quiz from "./quiz";
 import quiz_score from "./score";
+import { reset_skip } from "./skip";
 import quiz_stop from "./stop";
 
 export default async function quiz_anser(message: M | PM, args: string[], userId: string) {
+  reset_skip(message.guildId!, false);
+  reset_hint(message.guildId!, false);
   const guildDB = await MDB.get.guild(message);
   const quizDB = client.quizdb(message.guildId!);
   var anser_user = `<@${userId}>`;
@@ -19,7 +23,9 @@ export default async function quiz_anser(message: M | PM, args: string[], userId
       : (args[1] === "오류")
       ? `노래오류로 스킵되었습니다.`
       : '스킵하셨습니다.';
-    quizDB.score.set("skip", quizDB.score.get("skip") || 0 + 1);
+    var skipnum = quizDB.score.get("skip");
+    if (!skipnum) skipnum = 0;
+    quizDB.score.set("skip", skipnum + 1);
   } else {
     quizDB.score.set(message.author!.id, quizDB.score.get(message.author!.id) || 0 + 1);
   }

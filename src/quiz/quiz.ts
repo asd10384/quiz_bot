@@ -49,25 +49,36 @@ export default async function quiz(message: M | PM, userId: string) {
     guildId: message.guildId!
   });
   const Player = createAudioPlayer();
+  connection.setMaxListeners(0);
+  Player.setMaxListeners(0);
+  Player.on("error", (err) => {
+    if (client.debug) console.log("Player 오류:", err);
+    Player.stop();
+    return quiz_anser(message, ["스킵", "오류"], userId);
+  });
   var ytsource: internal.Readable | undefined = undefined;
   try {
     if (client.debug) console.log(`${message.guild?.name} {\n  get: ${quizDB.page.page.slice(0,-1).join("/")}\n  number: ${quizDB.count[0]}\n  realnumber: ${quizDB.nowplaying.realnumber+1}\n  name: ${quizDB.nowplaying.vocal}-${quizDB.nowplaying.name}\n  link: ${quizDB.nowplaying.link}\n}`);
     ytsource = ytdl(quizDB.nowplaying.link, {
       filter: "audioonly",
       quality: "highestaudio",
+      highWaterMark: 1 << 25,
       requestOptions: { agent }
-    }).on("error", (err) => {
-      if (client.debug) console.log("ytdl-core오류1:", err);
+    });
+    ytsource.on("error", (err) => {
+      if (client.debug) console.log('ytdl-core오류1:', err);
+      ytsource = undefined;
       return undefined;
     });
-  } catch {}
-  if (!ytsource) {
-    quiz_anser(message, ["스킵", "오류"], userId);
+  } catch(err) {
+    ytsource = undefined;
   }
-  try {
-    await entersState(connection, VoiceConnectionStatus.Ready, 30_000);
-  } catch {}
-  const resource = createAudioResource(ytsource!, {
+  if (!ytsource) {
+    Player.stop();
+    return quiz_anser(message, ["스킵", "오류"], userId);
+  }
+  await entersState(connection, VoiceConnectionStatus.Ready, 30_000).catch((err) => {});
+  const resource = createAudioResource(ytsource, {
     inlineVolume: true, inputType: StreamType.Arbitrary
   });
   resource.volume?.setVolume(0.7);

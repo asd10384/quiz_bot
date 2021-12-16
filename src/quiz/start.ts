@@ -90,7 +90,7 @@ export default async function quiz_start(message: M | PM, userId: string) {
     }
     client.quiz.set(message.guildId!, quizDB);
     msg?.edit({
-      content: QUIZ_RULE(guildDB!),
+      content: `${QUIZ_RULE(guildDB!)}.`,
       embeds: [ embed ]
     });
   });

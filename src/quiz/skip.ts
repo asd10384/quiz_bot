@@ -19,7 +19,7 @@ export async function quiz_skip(message: M | PM, userId: string) {
     })
   ] }).then(m => client.msgdelete(m, 1));
   if (!can.get(message.guildId!)) return;
-  const maxmember = channel.members.size-1;
+  const maxmember = channel.members.size;
   if (skip.get(message.guildId!)?.includes(userId)) return message.channel.send({ embeds: [
     client.mkembed({
       title: `**\` 이미 투표하셨습니다. \`**`,
