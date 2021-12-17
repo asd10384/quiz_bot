@@ -7,8 +7,6 @@ export default async function bulkmessage(message: M | PM | I) {
   const channel = message.guild?.channels.cache.get(guildDB!.channelId) as TextChannel | undefined;
   if (!channel) return;
   channel.messages.fetch({ after: guildDB!.msgId }).then(async (ms) => {
-    if (ms.size > 1) {
-      channel.bulkDelete(ms.size-1).catch(() => {});
-    }
+    if (ms.size > 0) channel.bulkDelete(ms.size).catch(() => {});
   });
 }

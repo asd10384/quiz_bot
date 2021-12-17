@@ -27,7 +27,9 @@ export default async function quiz_anser(message: M | PM, args: string[], userId
     if (!skipnum) skipnum = 0;
     quizDB.score.set("skip", skipnum + 1);
   } else {
-    quizDB.score.set(message.author!.id, quizDB.score.get(message.author!.id) || 0 + 1);
+    var scorenum = quizDB.score.get(message.author!.id);
+    if (!scorenum) scorenum = 0;
+    quizDB.score.set(message.author!.id, scorenum + 1);
   }
   quiz_score(message);
   quizDB.count[0] = quizDB.count[0] + 1;

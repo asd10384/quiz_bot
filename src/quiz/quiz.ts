@@ -56,6 +56,21 @@ export default async function quiz(message: M | PM, userId: string) {
     Player.stop();
     return quiz_anser(message, ["스킵", "오류"], userId);
   });
+  connection.on("error", (err) => {
+    if (client.debug) console.log("connection 오류:", err);
+    Player.stop();
+    return quiz_anser(message, ["스킵", "오류"], userId);
+  });
+  var checkvideo = await ytdl.getInfo(quizDB.nowplaying.link, {
+    lang: "KR"
+  }).catch((err) => {
+    checkvideo = undefined;
+    return undefined;
+  });
+  if (!checkvideo) {
+    Player.stop();
+    return quiz_anser(message, ["스킵", "오류"], userId);
+  }
   var ytsource: internal.Readable | undefined = undefined;
   try {
     if (client.debug) console.log(`${message.guild?.name} {\n  get: ${quizDB.page.page.slice(0,-1).join("/")}\n  number: ${quizDB.count[0]}\n  realnumber: ${quizDB.nowplaying.realnumber+1}\n  name: ${quizDB.nowplaying.vocal}-${quizDB.nowplaying.name}\n  link: ${quizDB.nowplaying.link}\n}`);
@@ -87,8 +102,10 @@ export default async function quiz(message: M | PM, userId: string) {
   reset_skip(message.guildId!, true);
   reset_hint(message.guildId!, true);
   Player.on(AudioPlayerStatus.Idle, async (p) => {
-    Player.stop();
-    quiz_anser(message, ["스킵", "시간초과"], userId);
+    if (ytsource) {
+      Player.stop();
+      quiz_anser(message, ["스킵", "시간초과"], userId);
+    }
   });
   connection.on(VoiceConnectionStatus.Disconnected, () => {
     Player.stop();

@@ -27,7 +27,10 @@ export async function quiz_hint(message: M | PM, userId: string, admin?: boolean
     })
   ] }).then(m => client.msgdelete(m, 1));
   if (!can.get(message.guildId!)) return;
-  const maxmember = channel.members.size;
+  var maxmember = channel.members.size;
+  channel.members.forEach((member) => {
+    if (member.user.bot) maxmember-=1;
+  });
   if (hint.get(message.guildId!)?.includes(userId)) return message.channel.send({ embeds: [
     client.mkembed({
       title: `**\` 이미 투표하셨습니다. \`**`,
