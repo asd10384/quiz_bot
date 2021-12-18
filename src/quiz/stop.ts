@@ -7,6 +7,7 @@ import { TextChannel } from "discord.js";
 import { reset_skip } from "./skip";
 import { reset_hint } from "./hint";
 import bulkmessage from "./bulkmessage";
+import { quizanser } from "../classes/Handler";
 
 export default async function quiz_stop(message: M | PM | I, no?: boolean) {
   let guildDB = await MDB.module.guild.findOne({ id: message.guildId! });
@@ -34,6 +35,7 @@ export default async function quiz_stop(message: M | PM | I, no?: boolean) {
     maxpage: 1
   };
   quizDB.score.clear();
+  quizanser.delete(message.guildId!);
   reset_skip(message.guildId!, false);
   reset_hint(message.guildId!, false);
   client.quiz.set(message.guildId!, quizDB);

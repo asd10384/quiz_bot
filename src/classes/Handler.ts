@@ -9,6 +9,8 @@ import quiz_anser from '../quiz/anser';
 import { quiz_skip } from '../quiz/skip';
 import { quiz_hint } from '../quiz/hint';
 
+export const quizanser: Set<string> = new Set();
+
 export default class SlashHandler {
   public commands: Collection<string, Command>;
   public cooldown: { [key: string]: number };
@@ -76,18 +78,21 @@ export default class SlashHandler {
         client.msgdelete(message, 350, true);
       }
     } else {
-      MDB.get.guild(message).then((guildID) => {
+      return MDB.get.guild(message).then((guildID) => {
         if (guildID!.channelId === message.channelId) {
           const quizDB = client.quizdb(message.guildId!);
           if (quizDB.playing) {
             const text = message.content.trim().replace(/ +/g, " ").toLowerCase();
             if (text === "스킵" || text === "skip") return quiz_skip(message, message.author.id);
             if (text === "힌트" || text === "hint") return quiz_hint(message, message.author.id);
-            if (text === quizDB.nowplaying?.name.toLowerCase()) quiz_anser(message, [], message.author.id);
+            if (text === quizDB.nowplaying?.name.toLowerCase() && quizanser.has(message.guildId!)) {
+              quizanser.add(message.guildId!);
+              return quiz_anser(message, [], message.author.id);
+            }
           } else {
             client.msgdelete(message, 350, true);
             const command = this.commands.get("퀴즈");
-            if (command && command.msgrun) command.msgrun(message, message.content.trim().split(/ +/g));
+            if (command && command.msgrun) return command.msgrun(message, message.content.trim().split(/ +/g));
           }
         }
       });

@@ -12,12 +12,14 @@ import { reset_skip } from "./skip";
 import { reset_hint } from "./hint";
 import quiz_anser from "./anser";
 import bulkmessage from "./bulkmessage";
+import { quizanser } from "../classes/Handler";
 
 const proxy = process.env.PROXY;
 let agent: HttpsProxyAgent | undefined = undefined;
 if (proxy) agent = new HttpsProxyAgent(proxy);
 
 export default async function quiz(message: M | PM, userId: string) {
+  quizanser.delete(message.guildId!);
   var voicechannel: VoiceChannel | StageChannel | null | undefined = undefined;
   var connection = getVoiceConnection(message.guildId!);
   if (!connection) voicechannel = getbotchannel(message);

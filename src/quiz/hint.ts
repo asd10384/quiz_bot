@@ -27,7 +27,7 @@ export async function quiz_hint(message: M | PM, userId: string, admin?: boolean
     })
   ] }).then(m => client.msgdelete(m, 1));
   if (!can.get(message.guildId!)) return;
-  var maxmember = channel.members.size;
+  var maxmember = channel.members.size+1;
   channel.members.forEach((member) => {
     if (member.user.bot) maxmember-=1;
   });
