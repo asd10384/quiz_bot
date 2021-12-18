@@ -85,7 +85,7 @@ export default class SlashHandler {
             const text = message.content.trim().replace(/ +/g, " ").toLowerCase();
             if (text === "스킵" || text === "skip") return quiz_skip(message, message.author.id);
             if (text === "힌트" || text === "hint") return quiz_hint(message, message.author.id);
-            if (text === quizDB.nowplaying?.name.toLowerCase() && quizanser.has(message.guildId!)) {
+            if (text === quizDB.nowplaying?.name.toLowerCase() && !quizanser.has(message.guildId!)) {
               quizanser.add(message.guildId!);
               return quiz_anser(message, [], message.author.id);
             }
