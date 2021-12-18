@@ -1,4 +1,4 @@
-import { client } from "..";
+import { client } from "../index";
 import { M, PM } from "../aliases/discord.js";
 import MDB from "../database/Mongodb";
 import bulkmessage from "./bulkmessage";

@@ -1,4 +1,4 @@
-import { client } from "..";
+import { client } from "../index";
 import { M, PM } from "../aliases/discord.js";
 import { getbotchannel, getuserchannel } from "./getchannel";
 import { fshuffle } from "./shuffle";

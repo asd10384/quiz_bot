@@ -3,7 +3,7 @@ import { readdirSync } from 'fs';
 import _ from '../consts';
 import BotClient from './BotClient';
 import { Command } from '../interfaces/Command';
-import { client } from '..';
+import { client } from '../index';
 import MDB from "../database/Mongodb";
 import quiz_anser from '../quiz/anser';
 import { quiz_skip } from '../quiz/skip';

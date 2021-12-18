@@ -1,5 +1,5 @@
 import { load } from "cheerio";
-import { client } from "..";
+import { client } from "../index";
 import request from "request";
 import { fshuffle } from "./shuffle";
 import { page_data } from "./type";

@@ -1,4 +1,4 @@
-import { client } from "..";
+import { client } from "../index";
 import { M, PM, I } from "../aliases/discord.js";
 import { guild_type } from "../database/obj/guild";
 import MDB from "../database/Mongodb";

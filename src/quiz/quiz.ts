@@ -1,5 +1,5 @@
 import { createAudioResource, entersState, AudioPlayerStatus, getVoiceConnection, joinVoiceChannel, VoiceConnectionStatus, StreamType, createAudioPlayer } from "@discordjs/voice";
-import { client } from "..";
+import { client } from "../index";
 import { M, PM } from "../aliases/discord.js";
 import setmsg from "./msg";
 import quiz_stop from "./stop";

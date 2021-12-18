@@ -1,4 +1,4 @@
-import { client } from "..";
+import { client } from "../index";
 import { getVoiceConnection } from "@discordjs/voice";
 import { I, M, PM } from "../aliases/discord.js.js";
 import MDB from "../database/Mongodb";

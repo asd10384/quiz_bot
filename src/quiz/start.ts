@@ -1,4 +1,4 @@
-import { client } from "..";
+import { client } from "../index";
 import { I, M, PM } from "../aliases/discord.js.js";
 import request from "request";
 import MDB from "../database/Mongodb";

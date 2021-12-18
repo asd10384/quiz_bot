@@ -63,14 +63,16 @@ export default class HelpCommand implements Command {
     });
     let cmdlist: { label: string, description: string, value: string }[] = [];
     handler.commands.forEach((cmd) => {
-      if (!cmd.slashrun) return;
-      cmdlist.push({ label: `/${cmd.name}`, description: `${cmd.information ? cmd.information : cmd.description}`, value: `${cmd.name}` });
-      slashcmdembed.addField(`**/${cmd.name}**`, `${cmd.information ? cmd.information : cmd.description}`, true);
+      if (cmd.slashrun && cmd.visible) {
+        cmdlist.push({ label: `/${cmd.name}`, description: `${cmd.information ? cmd.information : cmd.description}`, value: `${cmd.name}` });
+        slashcmdembed.addField(`**/${cmd.name}**`, `${cmd.information ? cmd.information : cmd.description ? cmd.description : "-"}`, true);
+      }
     });
     handler.commands.forEach((cmd) => {
-      if (!cmd.msgrun) return;
-      // cmdlist.push({ label: `${client.prefix}${cmd.metadata.name} [${(cmd.metadata.aliases) ? cmd.metadata.aliases : ''}]`, description: `${cmd.metadata.description}`, value: `${cmd.metadata.name}` });
-      msgcmdembed.addField(`**${client.prefix}${cmd.name} [${(cmd.aliases) ? cmd.aliases : ''}]**`, `${cmd.information ? cmd.information : cmd.description}`, true);
+      if (cmd.msgrun && cmd.visible) {
+        // cmdlist.push({ label: `${client.prefix}${cmd.metadata.name} [${(cmd.metadata.aliases) ? cmd.metadata.aliases : ''}]`, description: `${cmd.metadata.description}`, value: `${cmd.metadata.name}` });
+        msgcmdembed.addField(`**${client.prefix}${cmd.name}${(cmd.aliases && cmd.aliases.length > 0) ? ` [ ${cmd.aliases} ]` : ""}**`, `${cmd.information ? cmd.information : cmd.description ? cmd.description : "-"}`, true);
+      }
     });
     const rowhelp = client.mkembed({
       title: '\` 명령어 상세보기 \`',
