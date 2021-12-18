@@ -75,7 +75,7 @@ export default class SlashHandler {
         if (client.debug) console.log(error); // 오류확인
         this.err(message, commandName);
       } finally {
-        client.msgdelete(message, 350, true);
+        client.msgdelete(message, 100, true);
       }
     } else {
       return MDB.get.guild(message).then((guildID) => {
@@ -90,7 +90,7 @@ export default class SlashHandler {
               return quiz_anser(message, [], message.author.id);
             }
           } else {
-            client.msgdelete(message, 350, true);
+            client.msgdelete(message, 100, true);
             const command = this.commands.get("퀴즈");
             if (command && command.msgrun) return command.msgrun(message, message.content.trim().split(/ +/g));
           }
