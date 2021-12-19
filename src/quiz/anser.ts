@@ -17,11 +17,11 @@ export default async function quiz_anser(message: M | PM, args: string[], userId
   var anser_user = `<@${userId}>`;
   if (args[0] === "스킵" || args[0] === "skip") {
     anser_user = (args[1] === '시간초과') 
-      ? '시간초과로 스킵되었습니다.' 
+      ? '시간 초과로 스킵되었습니다.' 
       : (args[1] === '관리자') 
       ? `<@${userId}> 님이 강제로 스킵했습니다.`
       : (args[1] === "오류")
-      ? `노래오류로 스킵되었습니다.`
+      ? `노래 오류로 스킵되었습니다.`
       : '스킵하셨습니다.';
     var skipnum = quizDB.score.get("skip");
     if (!skipnum) skipnum = 0;
@@ -39,9 +39,13 @@ export default async function quiz_anser(message: M | PM, args: string[], userId
   bulkmessage(message);
   setmsg(message, anser_user, time);
   setTimeout(() => {
-    try {
-      quiz(message, userId);
-    } catch {
+    if (client.quizdb(message.guildId!).playing) {
+      try {
+        quiz(message, userId);
+      } catch {
+        quiz_stop(message);
+      }
+    } else {
       quiz_stop(message);
     }
   }, time * 1000);

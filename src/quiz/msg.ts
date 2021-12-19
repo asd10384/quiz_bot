@@ -20,7 +20,7 @@ function setlist(guildDB: guild_type): string {
   let quizDB = client.quizdb(guildDB.id);
   if (quizDB.playing) {
     return `퀴즈를 종료하시려면 \` ${client.prefix}퀴즈 종료 \`를 입력해주세요.
-퀴즈가 진행되지 않거나 오류가 발생했을때 \` ${client.prefix}퀴즈 fix 를 입력해주세요.
+퀴즈가 진행되지 않거나 오류가 발생했을때 \` ${client.prefix}퀴즈 fix \`를 입력해주세요.
 힌트를 받으시려면 \`힌트 \`를 입력하거나 💡를 눌러주세요.
 문제를 스킵하시려면 \` 스킵 \`을 입력하거나 ⏭️을 눌러주세요.\n.`;
   } else {

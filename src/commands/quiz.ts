@@ -94,12 +94,16 @@ export default class 퀴즈Command implements Command {
       ] }).then(m => client.msgdelete(m, 1));
       return quiz_start(message, message.author.id);
     }
-    if (args[0] === "중지" || args[0] === "종료") return quiz_stop(message);
+    if (args[0] === "중지" || args[0] === "종료") {
+      message.delete().catch((err) => {});
+      return quiz_stop(message);
+    }
     if (args[0] === "설정") {
       if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] }).then(m => client.msgdelete(m, 1));
       return message.channel.send({ content: "현재 제작중 입니다." }).then(m => client.msgdelete(m, 1));
     }
     if (args[0] === "스킵") {
+      message.delete().catch((err) => {});
       if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] }).then(m => client.msgdelete(m, 1));
       return quiz_anser(message, ["스킵", "관리자"], message.author.id);
     }

@@ -1,4 +1,4 @@
-import { createAudioResource, entersState, AudioPlayerStatus, getVoiceConnection, joinVoiceChannel, VoiceConnectionStatus, StreamType, createAudioPlayer } from "@discordjs/voice";
+import { createAudioResource, entersState, AudioPlayerStatus, getVoiceConnection, joinVoiceChannel, VoiceConnectionStatus, StreamType, createAudioPlayer, AudioPlayer } from "@discordjs/voice";
 import { client } from "../index";
 import { M, PM } from "../aliases/discord.js";
 import setmsg from "./msg";
@@ -18,8 +18,14 @@ const proxy = process.env.PROXY;
 let agent: HttpsProxyAgent | undefined = undefined;
 if (proxy) agent = new HttpsProxyAgent(proxy);
 
+export const guildPlayer: Map<string, AudioPlayer> = new Map();
+export const guildStop: Set<string> = new Set();
+
 export default async function quiz(message: M | PM, userId: string) {
   quizanser.delete(message.guildId!);
+  guildStop.add(message.guildId!);
+  guildPlayer.get(message.guildId!)?.stop();
+  guildPlayer.delete(message.guildId!);
   var voicechannel: VoiceChannel | StageChannel | null | undefined = undefined;
   var connection = getVoiceConnection(message.guildId!);
   if (!connection) voicechannel = getbotchannel(message);
@@ -95,16 +101,18 @@ export default async function quiz(message: M | PM, userId: string) {
     return quiz_anser(message, ["스킵", "오류"], userId);
   }
   await entersState(connection, VoiceConnectionStatus.Ready, 30_000).catch((err) => {});
+  guildStop.delete(message.guildId!);
   const resource = createAudioResource(ytsource, {
     inlineVolume: true, inputType: StreamType.Arbitrary
   });
   resource.volume?.setVolume(0.7);
   Player.play(resource);
+  guildPlayer.set(message.guildId!, Player);
   const subscription = connection.subscribe(Player);
   reset_skip(message.guildId!, true);
   reset_hint(message.guildId!, true);
   Player.on(AudioPlayerStatus.Idle, async (p) => {
-    if (ytsource) {
+    if (ytsource && !guildStop.has(message.guildId!)) {
       Player.stop();
       quiz_anser(message, ["스킵", "시간초과"], userId);
     }
