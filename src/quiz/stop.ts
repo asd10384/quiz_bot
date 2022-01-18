@@ -10,7 +10,7 @@ import bulkmessage from "./bulkmessage";
 import { quizanser } from "../classes/Handler";
 
 export default async function quiz_stop(message: M | PM | I, no?: boolean) {
-  if (!no) bulkmessage(message);
+  if (!no) await bulkmessage(message);
   let guildDB = await MDB.module.guild.findOne({ id: message.guildId! });
   if (!guildDB) return;
   var channel = message.guild?.channels.cache.get(guildDB.channelId) as TextChannel;

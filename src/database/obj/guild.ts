@@ -50,17 +50,17 @@ export interface guild_type extends Document {
 
 const GuildSchema: Schema = new Schema({
   id: { type: String, required: true },
-  name: { type: String },
+  name: { type: String, default: "" },
   prefix: { type: String, default: (process.env.PREFIX) ? process.env.PREFIX : 'm;' },
-  role: { type: Array },
-  channelId: { type: String },
-  msgId: { type: String },
-  scoreId: { type: String },
+  role: { type: Array, default: [] },
+  channelId: { type: String, default: "" },
+  msgId: { type: String, default: "" },
+  scoreId: { type: String, default: "" },
   options: {
-    volume: { type: Number },
-    player: { type: Boolean },
-    listlimit: { type: Number },
-    author: { type: Boolean },
+    volume: { type: Number, default: 70 },
+    player: { type: Boolean, default: true },
+    listlimit: { type: Number, default: 300 },
+    author: { type: Boolean, default: false },
     nexttime: { type: Number, default: 10 },
     anser: { type: String, default: "제목" }
   }

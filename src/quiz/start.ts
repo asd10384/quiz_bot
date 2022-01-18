@@ -14,7 +14,7 @@ export default async function quiz_start(message: M | PM, userId: string) {
   const guildDB = await MDB.get.guild(message);
   const quizDB = client.quizdb(message.guildId!);
   const music_list = `${process.env.MUSIC_SITE}/music_list.js`;
-  request(music_list, async (err: any, res: any, body: string) => {
+  request.get(music_list, async (err: any, res: any, body: string) => {
     const data: page = eval(body)[0];
     var list: string[] = [];
     var getkey: string[] = [];

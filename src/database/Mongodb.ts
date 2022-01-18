@@ -30,32 +30,12 @@ async function guild_get(msg: M | I | VoiceState | PartialMessage | SelectMenuIn
   if (guildDB) {
     return guildDB;
   } else {
+    await guild_model.findOneAndDelete({ id: msg.guild?.id! });
     if (msg.guild?.id) {
-      let data = {
-        id: msg.guild?.id,
-        name: (msg.guild?.name) ? msg.guild.name : '',
-        prefix: (process.env.PREFIX) ? process.env.PREFIX : 'm;',
-        role: [],
-        channelId: '',
-        msgId: '',
-        playing: false,
-        nowplay: {
-          title: '',
-          author: '',
-          duration: '',
-          url: '',
-          image: '',
-          player: ''
-        },
-        queue: [],
-        options: {
-          volume: 70,
-          player: true,
-          listlimit: 300,
-          author: false
-        }
-      };
-      const guildDB: guild_type = new guild_model(data);
+      const guildDB: guild_type = new guild_model({});
+      guildDB.id = msg.guild!.id;
+      guildDB.name = msg.guild!.name;
+      guildDB.prefix = (process.env.PREFIX) ? process.env.PREFIX : 'q;';
       await guildDB.save().catch((err: any) => console.error(err));
       return guildDB;
     } else {
@@ -69,14 +49,12 @@ async function user_get(member: MEM) {
   if (userDB) {
     return userDB;
   } else {
+    await user_model.findOneAndDelete({ id: member.user.id });
     if (member.user.id) {
-      let data = {
-        id: member.user.id,
-        tag: member.user.tag,
-        name: (member.nickname) ? member.nickname : member.user.username,
-        canplay: true
-      };
-      const userDB: user_type = new user_model(data);
+      const userDB: user_type = new user_model({});
+      userDB.id = member.user.id;
+      userDB.tag = member.user.tag;
+      userDB.nickname = (member.nickname) ? member.nickname : member.user.username;
       await userDB.save().catch((err: any) => console.error(err));
       return userDB;
     } else {

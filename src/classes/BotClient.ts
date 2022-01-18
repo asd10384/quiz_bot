@@ -51,7 +51,7 @@ export default class BotClient extends Client {
     };
     this.ttstimer = new Map<string, { start: boolean, time: number }>();
     this.ttstimertime = (60) * 45; //분
-    this.embedcolor = "ORANGE";
+    this.embedcolor = process.env.EMBED_COLOR ? process.env.EMBED_COLOR as ColorResolvable : "ORANGE";
     this.maxqueue = 30;
     this.quiz = new Map();
   }

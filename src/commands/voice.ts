@@ -4,7 +4,7 @@ import { Command } from "../interfaces/Command";
 import { I, D } from "../aliases/discord.js.js";
 import { Message, MessageActionRow, MessageButton, StageChannel, VoiceChannel } from "discord.js";
 import MDB from "../database/Mongodb";
-import { joinVoiceChannel } from "@discordjs/voice";
+import { DiscordGatewayAdapterCreator, joinVoiceChannel } from "@discordjs/voice";
 
 /**
  * DB
@@ -46,7 +46,7 @@ export default class 음성Command implements Command {
     if (cmd === "join") {
       const channel = interaction.options.getChannel("channel", true) as VoiceChannel | StageChannel;
       joinVoiceChannel({
-        adapterCreator: interaction.guild!.voiceAdapterCreator!,
+        adapterCreator: interaction.guild!.voiceAdapterCreator! as DiscordGatewayAdapterCreator,
         channelId: channel.id,
         guildId: interaction.guildId!
       });

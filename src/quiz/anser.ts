@@ -8,6 +8,7 @@ import quiz from "./quiz";
 import quiz_score from "./score";
 import { reset_skip } from "./skip";
 import quiz_stop from "./stop";
+import { getVoiceConnection } from "@discordjs/voice";
 
 export default async function quiz_anser(message: M | PM, args: string[], userId: string) {
   reset_skip(message.guildId!, false);
@@ -36,10 +37,12 @@ export default async function quiz_anser(message: M | PM, args: string[], userId
   quizDB.anser = userId;
   client.quiz.set(message.guildId!, quizDB);
   const time = guildDB!.options.nexttime;
-  bulkmessage(message);
+  await bulkmessage(message);
   setmsg(message, anser_user, time);
   setTimeout(() => {
-    if (client.quizdb(message.guildId!).playing) {
+    const vc = getVoiceConnection(message.guildId!);
+    const quizDB = client.quizdb(message.guildId!);
+    if (vc && client.quizdb(message.guildId!).playing && quizDB.queue.length > 0) {
       try {
         quiz(message, userId);
       } catch {

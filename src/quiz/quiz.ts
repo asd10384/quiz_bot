@@ -1,4 +1,4 @@
-import { createAudioResource, entersState, AudioPlayerStatus, getVoiceConnection, joinVoiceChannel, VoiceConnectionStatus, StreamType, createAudioPlayer, AudioPlayer } from "@discordjs/voice";
+import { createAudioResource, entersState, AudioPlayerStatus, getVoiceConnection, joinVoiceChannel, VoiceConnectionStatus, StreamType, createAudioPlayer, AudioPlayer, DiscordGatewayAdapterCreator } from "@discordjs/voice";
 import { client } from "../index";
 import { M, PM } from "../aliases/discord.js";
 import setmsg from "./msg";
@@ -49,10 +49,10 @@ export default async function quiz(message: M | PM, userId: string) {
     || `${process.env.MUSIC_SITE}/customimg/${quizDB.page.page.slice(0,-1).join("/")}/${quizDB.nowplaying?.name}.png`
     : `https://img.youtube.com/vi/${quizDB.nowplaying?.link.replace("https://youtu.be/","")}/sddefault.jpg`;
   client.quiz.set(message.guildId!, quizDB);
-  bulkmessage(message);
+  await bulkmessage(message);
   setmsg(message);
   if (!connection) connection = joinVoiceChannel({
-    adapterCreator: message.guild!.voiceAdapterCreator!,
+    adapterCreator: message.guild!.voiceAdapterCreator! as DiscordGatewayAdapterCreator,
     channelId: voicechannel!.id,
     guildId: message.guildId!
   });
@@ -70,7 +70,8 @@ export default async function quiz(message: M | PM, userId: string) {
     return quiz_anser(message, ["스킵", "오류"], userId);
   });
   var checkvideo = await ytdl.getInfo(quizDB.nowplaying.link, {
-    lang: "KR"
+    lang: "KR",
+    requestOptions: { agent }
   }).catch((err) => {
     checkvideo = undefined;
     return undefined;

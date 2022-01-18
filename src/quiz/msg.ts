@@ -11,7 +11,9 @@ export default async function setmsg(message: M | PM | I, anser_user?: string, t
       let text = `${setlist(guildDB)}`;
       let embed = setembed(guildDB, anser_user, time);
       let channel = message.guild?.channels.cache.get(guildDB.channelId);
-      (channel as TextChannel).messages.cache.get(guildDB.msgId)?.edit({ content: text, embeds: [embed] });
+      try {
+        (channel as TextChannel).messages.cache.get(guildDB.msgId)?.edit({ content: text, embeds: [embed] });
+      } catch (err) {}
     }
   });
 }

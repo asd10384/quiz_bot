@@ -12,8 +12,8 @@ export interface user_type extends Document {
 const UserSchema: Schema = new Schema({
   id: { type: String, required: true },
   tag: { type: String, required: true },
-  nickname: { type: String },
-  canplay: { type: Boolean }
+  nickname: { type: String, default: "" },
+  canplay: { type: Boolean, default: true }
 });
 
 export const user_model = model<user_type>(`UserBot`, UserSchema);
