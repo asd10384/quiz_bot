@@ -1,11 +1,9 @@
-import { config } from "dotenv";
+import "dotenv/config";
 import { I, M, MEM } from "../aliases/discord.js";
 import { connect } from "mongoose";
-import { GuildMember, PartialMessage, SelectMenuInteraction, VoiceState } from "discord.js";
+import { Guild, GuildMember, PartialMessage, SelectMenuInteraction, VoiceState } from "discord.js";
 import { guild_type, guild_model } from "./obj/guild";
 import { user_type, user_model } from "./obj/user";
-
-config();
 
 const mongodb_url = process.env.MONGODB_URL;
 connect(mongodb_url!, (err) => {
@@ -25,18 +23,18 @@ const out = {
 
 export default out;
 
-async function guild_get(msg: M | I | VoiceState | PartialMessage | SelectMenuInteraction) {
-  let guildDB: guild_type | null = await guild_model.findOne({ id: msg.guild?.id! });
+async function guild_get(guild: Guild) {
+  let guildDB: guild_type | null = await guild_model.findOne({ id: guild.id });
   if (guildDB) {
+    if (guildDB.name !== guild.name) guildDB.name = (guild.name) ? guild.name : "";
     return guildDB;
   } else {
-    await guild_model.findOneAndDelete({ id: msg.guild?.id! });
-    if (msg.guild?.id) {
+    await guild_model.findOneAndDelete({ id: guild.id }).catch((err) => {});
+    if (guild.id) {
       const guildDB: guild_type = new guild_model({});
-      guildDB.id = msg.guild!.id;
-      guildDB.name = msg.guild!.name;
-      guildDB.prefix = (process.env.PREFIX) ? process.env.PREFIX : 'q;';
-      await guildDB.save().catch((err: any) => console.error(err));
+      guildDB.id = guild.id;
+      guildDB.name = guild.name;
+      await guildDB.save().catch((err) => console.error(err));
       return guildDB;
     } else {
       return console.error('guildID를 찾을수 없음');
@@ -47,15 +45,16 @@ async function guild_get(msg: M | I | VoiceState | PartialMessage | SelectMenuIn
 async function user_get(member: MEM) {
   let userDB: user_type | null = await user_model.findOne({ id: member.user.id });
   if (userDB) {
+    if (userDB.nickname !== (member.nickname ? member.nickname : member.user.username)) userDB.nickname = member.nickname ? member.nickname : member.user.username;
     return userDB;
   } else {
-    await user_model.findOneAndDelete({ id: member.user.id });
+    await user_model.findOneAndDelete({ id: member.user.id }).catch((err) => {});
     if (member.user.id) {
       const userDB: user_type = new user_model({});
       userDB.id = member.user.id;
       userDB.tag = member.user.tag;
       userDB.nickname = (member.nickname) ? member.nickname : member.user.username;
-      await userDB.save().catch((err: any) => console.error(err));
+      await userDB.save().catch((err) => console.error(err));
       return userDB;
     } else {
       return console.error('userID를 찾을수 없음');

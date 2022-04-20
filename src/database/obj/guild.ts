@@ -1,7 +1,6 @@
-import { config } from "dotenv";
+import "dotenv/config";
 import { Document, model, Schema } from "mongoose";
-import { page_data } from "../../quiz/type";
-config();
+import { page_data } from "../../quiz/quizClass";
 
 export interface quiz {
   score: Map<string, number>;

@@ -1,7 +1,5 @@
-import { config } from "dotenv";
-import { client, handler } from "..";
-
-config();
+import "dotenv/config";
+import { client, handler } from "../index";
 
 /** onReady 핸들러 */
 export default function onReady() {

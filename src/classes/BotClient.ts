@@ -1,9 +1,7 @@
-import { ChatInputApplicationCommandData, Client, ClientEvents, ColorResolvable, EmbedFieldData, Message, MessageEmbed } from 'discord.js';
-import { config } from 'dotenv';
+import "dotenv/config";
+import { ChatInputApplicationCommandData, Client, ClientEvents, ColorResolvable, EmbedFieldData, Guild, Message, MessageEmbed } from 'discord.js';
 import _ from '../consts';
-import { quiz } from "../database/obj/guild";
-
-config(); // .env 불러오기
+import Quiz from "../quiz/quizClass";
 
 /**
  * 봇 클라이언트
@@ -22,7 +20,7 @@ export default class BotClient extends Client {
   ttstimertime: number;
   embedcolor: ColorResolvable;
   maxqueue: number;
-  quiz: Map<string, quiz>;
+  quiz: Map<string, Quiz>;
   /**
    * 클라이언트 생성
    * 
@@ -74,38 +72,11 @@ export default class BotClient extends Client {
    */
   public onEvent = (event: keyof ClientEvents, func: Function, ...extra: any[]) => this.on(event, (...args) => func(...args, ...extra));
 
-  public quizdb = (guildId: string): quiz => {
-    if (this.quiz.get(guildId)) return this.quiz.get(guildId)!;
-    const output: quiz = {
-      score: new Map(),
-      anser: null,
-      image: "",
-      playing: false,
-      nowplaying: null,
-      queue: [],
-      type: {
-        complite: 0,
-        customimg: false,
-        desc: "",
-        quiz: "",
-        space: true,
-        start: false,
-        url: ""
-      },
-      count: [ 1, 1 ],
-      page: {
-        go: null,
-        page: [],
-        list: [],
-        maxpage: 0,
-        now: 0,
-        first: true,
-        player: null
-      }
-    };
-    this.quiz.set(guildId, output);
-    return output;
+  public getqc = (guild: Guild): Quiz => {
+    if (!this.quiz.has(guild.id)) this.quiz.set(guild.id, new Quiz(guild));
+    return this.quiz.get(guild.id)!;
   }
+
   mkembed(data: {
     title?: string,
     description?: string,
@@ -129,7 +100,7 @@ export default class BotClient extends Client {
     if (data.addField) embed.addField(data.addField.name, data.addField.value, data.addField.inline);
     if (data.addFields) embed.addFields(data.addFields);
     if (data.timestamp) embed.setTimestamp(data.timestamp);
-    if (data.footer) embed.setFooter(data.footer.text, data.footer.iconURL);
+    if (data.footer) embed.setFooter({ text: data.footer.text, iconURL: data.footer.iconURL });
     if (data.color) embed.setColor(data.color);
     return embed;
   }

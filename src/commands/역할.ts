@@ -66,7 +66,7 @@ export default class 역할Command implements Command {
     if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
     const cmd = interaction.options.getSubcommand();
     const role = interaction.options.getRole('역할');
-    let guildDB = await MDB.get.guild(interaction);
+    let guildDB = await MDB.get.guild(interaction.guild!);
     if (cmd === '목록') return await interaction.editReply({ embeds: [ this.list(guildDB!) ] });
     if (cmd === '추가') return await interaction.editReply({ embeds: [ this.add(guildDB!, role!.id) ] });
     if (cmd === '제거') return await interaction.editReply({ embeds: [ this.remove(guildDB!, role!.id) ] });
@@ -74,7 +74,7 @@ export default class 역할Command implements Command {
   }
   async msgrun(message: Message, args: string[]) {
     if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] });
-    let guildDB = await MDB.get.guild(message);
+    let guildDB = await MDB.get.guild(message.guild!);
     if (args[0] === "목록") return message.channel.send({ embeds: [ this.list(guildDB!) ] }).then(m => client.msgdelete(m, 4));
     if (args[0] === "추가") {
       if (args[1]) {

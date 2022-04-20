@@ -1,4 +1,4 @@
-import { client, handler } from '..';
+import { client, handler } from '../index';
 import { Interaction } from 'discord.js';
 
 export default async function onInteractionCreate (interaction: Interaction) {
@@ -16,5 +16,10 @@ export default async function onInteractionCreate (interaction: Interaction) {
    * ephemeral: true
    */
   await interaction.deferReply({ ephemeral: true }).catch(() => {});
-  handler.runCommand(interaction);
+  
+  const commandName = interaction.commandName;
+  const command = handler.commands.get(commandName);
+
+  if (!command) return;
+  if (command.slashrun) command.slashrun(interaction);
 }

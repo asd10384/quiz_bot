@@ -1,6 +1,5 @@
-import { config } from "dotenv";
+import "dotenv/config";
 import { Document, model, Schema } from "mongoose";
-config();
 
 export interface user_type extends Document {
   id: string,

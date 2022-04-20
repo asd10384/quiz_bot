@@ -1,12 +1,10 @@
 import { client } from "../index";
-import { PM, M } from "../aliases/discord.js.js"
-import setmsg from "./msg";
+import { Guild } from "discord.js";
 
-export async function shuffle(message: M | PM) {
-  let quizDB = client.quizdb(message.guildId!);
-  quizDB.queue = fshuffle(quizDB.queue);
-  client.quiz.set(message.guildId!, quizDB);
-  setmsg(message);
+export async function shuffle(guild: Guild) {
+  const qc = client.getqc(guild);
+  qc.setqueue(fshuffle(qc.queue));
+  qc.setmsg(guild);
 }
 
 export function fshuffle(list: any[]) {
