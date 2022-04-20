@@ -22,7 +22,9 @@ if (proxy) {
 } else {
   console.error("proxy를 찾을수 없음");
 }
+
 export const MUSIC_SITE = process.env.MUSIC_SITE ? process.env.MUSIC_SITE.trim().endsWith("/") ? process.env.MUSIC_SITE.trim().slice(0,-1) : process.env.MUSIC_SITE.trim() : "";
+const LOGCHANNEL = process.env.LOGCHANNEL ? process.env.LOGCHANNEL.trim().replace(/ +/g,"").split(",") : undefined;
 
 export interface page_data {
   url: string;
@@ -268,7 +270,7 @@ export default class Quiz {
       if (this.page.maxpage < 0) this.page.maxpage = 0;
     }
     msg?.edit({
-      content: `${QUIZ_RULE(guildDB!)}.`,
+      content: `${QUIZ_RULE(guildDB!)}ㅤ`,
       embeds: [ embed ]
     });
   }
@@ -287,7 +289,7 @@ export default class Quiz {
       return undefined;
     });
     if (!$) {
-      this.quiz_stop(message.guild!, true);
+      this.quiz_stop(message.guild!);
       await sleep(100);
       return message.channel.send({ embeds: [ client.mkembed({
         title: `오류발생`,
@@ -322,9 +324,31 @@ export default class Quiz {
     }
     logtext += `}\n`;
     if (client.debug) console.log(logtext);
+    if (LOGCHANNEL) this.sendlog(logtext);
     this.queue = second;
     this.count = [ 1, second.length ];
     this.quiz(message, userId);
+  }
+
+  sendlog(text: string) {
+    if (LOGCHANNEL && LOGCHANNEL.length === 2) {
+      let list: string[] = [];
+      while(true) {
+        if (text.length > 1980) {
+          list.push(text.slice(0,1980));
+          text = text.slice(1980);
+        } else {
+          list.push(text);
+          break;
+        }
+      }
+      const channel = client.guilds.cache.get(LOGCHANNEL[0])?.channels.cache.get(LOGCHANNEL[1]);
+      if (channel) {
+        for (let t of list) {
+          (channel as TextChannel).send({ content: t }).catch((err) => {});
+        }
+      }
+    }
   }
 
   async quiz(message: M | PM, userId: string) {
@@ -387,6 +411,7 @@ export default class Quiz {
     var ytsource: internal.Readable | undefined = undefined;
     try {
       if (client.debug) console.log(`${message.guild?.name} {\n  get: ${this.page.page.slice(0,-1).join("/")}\n  number: ${this.count[0]}\n  realnumber: ${this.nowplaying.realnumber+1}\n  name: ${this.nowplaying.vocal}-${this.nowplaying.name}\n  link: ${this.nowplaying.link}\n}`);
+      if (LOGCHANNEL) this.sendlog(`${message.guild?.name} {\n  get: ${this.page.page.slice(0,-1).join("/")}\n  number: ${this.count[0]}\n  realnumber: ${this.nowplaying.realnumber+1}\n  name: ${this.nowplaying.vocal}-${this.nowplaying.name}\n  link: ${this.nowplaying.link}\n}`);
       ytsource = ytdl(this.nowplaying.link, {
         filter: "audioonly",
         quality: "highestaudio",
@@ -424,7 +449,6 @@ export default class Quiz {
       }
     });
     connection.on(VoiceConnectionStatus.Disconnected, () => {
-      Player.stop();
       this.quiz_stop(message.guild!);
       connection?.disconnect();
     });
@@ -490,7 +514,7 @@ export default class Quiz {
   setscoreembed(): MessageEmbed {
     let list: score[] = this.score.filter(v => v.Id !== "skip");
     let textlist: string[] = [];
-    list.sort((a, b) => b.count - a.count);
+    list.sort((a, b) => a === b ? -1 : b.count - a.count);
     for (let i in list) {
       let obj = list[i];
       textlist.push(`**${Number(i)+1}.** <@${obj.Id}> : ${obj.count}`);
@@ -605,7 +629,7 @@ export default class Quiz {
       return message.channel.send({ embeds: [
         client.mkembed({
           title: `**\` 힌트 \`**`,
-          description: text.replace(/ +/g, "  ").toUpperCase()
+          description: text.replace(/ +/g, "ㅤ").toUpperCase()
         })
       ] });
     }
@@ -621,7 +645,7 @@ export default class Quiz {
     const guildDB = await MDB.get.guild(guild);
     const channel = guild.channels.cache.get(guildDB!.channelId) as TextChannel | undefined;
     if (!channel) return;
-    await channel.messages.fetch({ after: guildDB!.msgId }).then(async (ms) => {
+    await channel.messages.fetch({ after: guildDB!.scoreId }).then(async (ms) => {
       if (ms.size > 0) await channel.bulkDelete(ms.size).catch(() => {});
     });
     return await sleep(50);
@@ -681,7 +705,7 @@ export default class Quiz {
   힌트를 받으시려면 \`힌트 \`를 입력하거나 💡를 눌러주세요.
   문제를 스킵하시려면 \` 스킵 \`을 입력하거나 ⏭️을 눌러주세요.\n.`;
     } else {
-      return `${QUIZ_RULE(guildDB)}.`;
+      return `${QUIZ_RULE(guildDB)}ㅤ`;
     }
   }
   setembed(guildDB: guild_type, anser_user?: string, time?: number): MessageEmbed {

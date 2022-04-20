@@ -149,17 +149,8 @@ export default class 퀴즈Command implements Command {
       type: 'GUILD_TEXT',
       topic: `퀴즈 시작: ${client.prefix}퀴즈 시작`
     });
-    const score = await channel?.send({
-      embeds: [
-        client.mkembed({
-          title: `**\` [ 퀴즈 스코어 ] \`**`,
-          description: `**1.** 없음\n\n스킵한 문제: 0개`,
-          footer: { text: "스코어는 다음퀴즈 전까지 사라지지 않습니다." }
-        })
-      ]
-    });
     const msg = await channel?.send({
-      content: `${QUIZ_RULE(guildDB)}.`,
+      content: `${QUIZ_RULE(guildDB)}ㅤ`,
       embeds: [
         client.mkembed({
           title: `**현재 퀴즈가 시작되지 않았습니다**`,
@@ -167,6 +158,15 @@ export default class 퀴즈Command implements Command {
           image: `https://ytms.netlify.app/defult.png`,
           footer: { text: `${client.prefix}퀴즈 도움말` },
           color: client.embedcolor
+        })
+      ]
+    });
+    const score = await channel?.send({
+      embeds: [
+        client.mkembed({
+          title: `**\` [ 퀴즈 스코어 ] \`**`,
+          description: `**1.** 없음\n\n스킵한 문제: 0개`,
+          footer: { text: "스코어는 다음퀴즈 전까지 사라지지 않습니다." }
         })
       ]
     });
@@ -193,17 +193,8 @@ export default class 퀴즈Command implements Command {
       });
     }
     setTimeout(async () => {
-      const score = await (channel as TextChannel).send({
-        embeds: [
-          client.mkembed({
-            title: `**\` [ 퀴즈 스코어 ] \`**`,
-            description: `**1.** 없음\n\n스킵한 문제: 0개`,
-            footer: { text: "스코어는 다음퀴즈 전까지 사라지지 않습니다." }
-          })
-        ]
-      });
       const msg = await (channel as TextChannel).send({
-        content: `${QUIZ_RULE(guildDB)}.`,
+        content: `${QUIZ_RULE(guildDB)}ㅤ`,
         embeds: [
           client.mkembed({
             title: `**현재 퀴즈가 시작되지 않았습니다**`,
@@ -211,6 +202,15 @@ export default class 퀴즈Command implements Command {
             image: `https://ytms.netlify.app/defult.png`,
             footer: { text: `${client.prefix}퀴즈 도움말` },
             color: client.embedcolor
+          })
+        ]
+      });
+      const score = await (channel as TextChannel).send({
+        embeds: [
+          client.mkembed({
+            title: `**\` [ 퀴즈 스코어 ] \`**`,
+            description: `**1.** 없음\n\n스킵한 문제: 0개`,
+            footer: { text: "스코어는 다음퀴즈 전까지 사라지지 않습니다." }
           })
         ]
       });
