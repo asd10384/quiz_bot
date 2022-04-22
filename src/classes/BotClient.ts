@@ -21,6 +21,7 @@ export default class BotClient extends Client {
   embedcolor: ColorResolvable;
   maxqueue: number;
   quiz: Map<string, Quiz>;
+  cooldowntime: number;
   /**
    * 클라이언트 생성
    * 
@@ -52,6 +53,7 @@ export default class BotClient extends Client {
     this.embedcolor = process.env.EMBED_COLOR ? process.env.EMBED_COLOR as ColorResolvable : "ORANGE";
     this.maxqueue = 30;
     this.quiz = new Map();
+    this.cooldowntime = 1250;
   }
 
   /**

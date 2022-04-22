@@ -35,6 +35,17 @@ export default async function onmessageReactionAdd (reaction: MessageReaction | 
       ] }).then(m => client.msgdelete(m, 1));
       return reaction.users.remove(user.id);
     }
+    if (qc.cooldown+client.cooldowntime > Date.now()) {
+      reaction.message.channel.send({ embeds: [
+        client.mkembed({
+          title: `**퀴즈 오류**`,
+          description: `이모지를 너무 빨리 눌렀습니다.\n${((qc.cooldown+client.cooldowntime-Date.now())/1000).toFixed(2)}초 뒤에 사용해주세요.`,
+          color: "DARK_RED"
+        })
+      ] }).then(m => client.msgdelete(m, 1));
+      return reaction.users.remove(user.id);
+    }
+    qc.setcooldown(Date.now());
     if (["⬅️", "➡️"].includes(name)) {
       qc.setpage({ first: false });
       let getnow = (name === "⬅️") ? qc.page.now - 1 : qc.page.now + 1;
@@ -46,8 +57,7 @@ export default async function onmessageReactionAdd (reaction: MessageReaction | 
         qc.setpage({ now: getnow });
       }
       qc.quiz_start(reaction.message, user.id);
-    }
-    if (["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"].includes(name)) {
+    } else if (["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"].includes(name)) {
       var number = smallnum(name);
       let pp = 0;
       if (qc.page.list[number-1] === "시작하기") {
@@ -66,17 +76,13 @@ export default async function onmessageReactionAdd (reaction: MessageReaction | 
         qc.setpage({ page: getpage });
         qc.quiz_start(reaction.message, user.id);
       }
-    }
-    if (name === "↩️") {
+    } else if (name === "↩️") {
       qc.setpage({ first: false });
       if (qc.page.go !== null) {
         qc.setpage({ go: null });
-        qc.page.go = null;
       } else {
-        let getpage = qc.page.page;
-        getpage.pop();
+        qc.setpage({ page: qc.page.page.slice(0,-1) });
         qc.setpage({ now: 0 });
-        qc.setpage({ page: getpage });
       }
       qc.quiz_start(reaction.message, user.id);
     }

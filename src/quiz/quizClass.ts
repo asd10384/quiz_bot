@@ -85,6 +85,7 @@ type gethtmlsite = { name: string, vocal: string, link: string; realnumber: numb
 type score = { Id: string, count: number };
 
 export default class Quiz {
+  cooldown: number;
   guild: Guild;
   score: score[];
   anser: string | null;
@@ -114,6 +115,7 @@ export default class Quiz {
 
   constructor(guild: Guild) {
     this.guild = guild;
+    this.cooldown = 0;
     this.playing = false;
     this.queue = [];
     this.nowplaying = null;
@@ -149,6 +151,10 @@ export default class Quiz {
     this.hintlist = [];
   }
 
+  setcooldown(getcooldown: number) {
+    this.cooldown = getcooldown;
+  }
+
   setqueue(getqueue: nowplay[]) {
     this.queue = getqueue;
   }
@@ -158,13 +164,13 @@ export default class Quiz {
   }
 
   setpage(getpage: getreactpage) {
-    if (getpage.first) this.page.first = getpage.first;
-    if (getpage.go) this.page.go = getpage.go;
-    if (getpage.list) this.page.list = getpage.list;
-    if (getpage.maxpage) this.page.maxpage = getpage.maxpage;
-    if (getpage.now) this.page.now = getpage.now;
-    if (getpage.page) this.page.page = getpage.page;
-    if (getpage.player) this.page.player = getpage.player;
+    if (getpage.first !== undefined) this.page.first = getpage.first;
+    if (getpage.go !== undefined) this.page.go = getpage.go;
+    if (getpage.list !== undefined) this.page.list = getpage.list;
+    if (getpage.maxpage !== undefined) this.page.maxpage = getpage.maxpage;
+    if (getpage.now !== undefined) this.page.now = getpage.now;
+    if (getpage.page !== undefined) this.page.page = getpage.page;
+    if (getpage.player !== undefined) this.page.player = getpage.player;
   }
 
   async quiz_getsite(): Promise<page> {
@@ -223,8 +229,7 @@ export default class Quiz {
         this.setquiz(message, getvalue, userId);
       } else {
         this.page.go = null;
-        this.page.page.pop();
-        this.page.page.pop();
+        this.page.page = this.page.page.slice(0,-2);
       }
     }
     switch (this.page.page.length) {

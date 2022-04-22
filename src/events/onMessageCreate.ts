@@ -9,6 +9,14 @@ export default async function onMessageCreate (message: Message) {
     const args = content.split(/ +/g);
     const commandName = args.shift()?.toLowerCase();
     const command = handler.commands.get(commandName!) || handler.commands.find((cmd) => cmd.aliases.includes(commandName!));
+    
+    const qc = client.getqc(message.guild!);
+    if (qc.cooldown+client.cooldowntime > Date.now()) return message.channel.send({ embeds: [ client.mkembed({
+      title: `너무 빨리 입력했습니다.`,
+      description: `${((qc.cooldown+client.cooldowntime-Date.now())/1000).toFixed(2)}초뒤,\n다시 시도해주세요.`,
+      color: "DARK_RED"
+    }) ] }).then(m => client.msgdelete(m, 1));
+    qc.setcooldown(Date.now());
     try {
       if (!command || !command.msgrun) return handler.err(message, commandName);
       command.msgrun(message, args);
@@ -31,6 +39,13 @@ export default async function onMessageCreate (message: Message) {
             return qc.quiz_anser(message, [], message.author.id);
           }
         } else {
+          // 쿨타임
+          if (qc.cooldown+client.cooldowntime > Date.now()) return message.channel.send({ embeds: [ client.mkembed({
+            title: `너무 빨리 입력했습니다.`,
+            description: `${((qc.cooldown+client.cooldowntime-Date.now())/1000).toFixed(2)}초뒤,\n다시 시도해주세요.`,
+            color: "DARK_RED"
+          }) ] }).then(m => client.msgdelete(m, 1));
+          qc.setcooldown(Date.now());
           client.msgdelete(message, 100, true);
           const command = handler.commands.get("퀴즈");
           if (command && command.msgrun) return command.msgrun(message, message.content.trim().split(/ +/g));

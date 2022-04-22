@@ -11,6 +11,9 @@ export default async function onInteractionCreate (interaction: Interaction) {
   }
   if (!interaction.isCommand()) return;
 
+  // 쿨타임
+  client.getqc(interaction.guild!).setcooldown(Date.now());
+
   /**
    * 명령어 친사람만 보이게 설정
    * ephemeral: true
