@@ -653,7 +653,40 @@ export default class Quiz {
     await channel.messages.fetch({ after: guildDB!.scoreId }).then(async (ms) => {
       if (ms.size > 0) await channel.bulkDelete(ms.size).catch(() => {});
     });
-    return await sleep(50);
+    await sleep(50);
+    let update = false;
+    if (!guildDB!.msgId) {
+      const msg = await (channel as TextChannel).send({
+        content: `${QUIZ_RULE(guildDB!)}ㅤ`,
+        embeds: [
+          client.mkembed({
+            title: `**현재 퀴즈가 시작되지 않았습니다**`,
+            description: `**정답설정: ${guildDB!.options.anser}**\n**다음문제시간: ${guildDB!.options.nexttime}초**`,
+            image: `https://ytms.netlify.app/defult.png`,
+            footer: { text: `${client.prefix}퀴즈 도움말` },
+            color: client.embedcolor
+          })
+        ]
+      });
+      guildDB!.msgId = msg.id;
+      update = true;
+    }
+    if (!guildDB!.scoreId) {
+      const score = await (channel as TextChannel).send({
+        embeds: [
+          client.mkembed({
+            title: `**\` [ 퀴즈 스코어 ] \`**`,
+            description: `**1.** 없음\n\n스킵한 문제: 0개`,
+            footer: { text: "스코어는 다음퀴즈 전까지 사라지지 않습니다." }
+          })
+        ]
+      });
+      guildDB!.scoreId = score.id;
+      update = true;
+    }
+    if (update) await guildDB!.save().catch((err) => {});
+    await sleep(25);
+    return null;
   }
   
   async quiz_stop(guild: Guild, no?: boolean) {
