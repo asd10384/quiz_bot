@@ -2,12 +2,12 @@ import { client } from "../index";
 import { check_permission as ckper, embed_permission as emper } from "../function/permission";
 import { Command } from "../interfaces/Command";
 import { I, D } from "../aliases/discord.js";
-import { Message, MessageActionRow, MessageButton } from "discord.js";
-import MDB from "../database/Mongodb";
+import { Message, MessageActionRow, MessageButton, MessageEmbed } from "discord.js";
+import MDB from "../database/Mysql";
 
 /**
  * DB
- * let guildDB = await MDB.get.guild(interaction);
+ * const guildDB = await MDB.get.guild(interaction.guild!);
  * 
  * check permission(role)
  * if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
@@ -26,6 +26,7 @@ export default class ExampleCommand implements Command {
     name: this.name,
     description: this.description
   };
+  msgmetadata?: { name: string; des: string; }[] = undefined;
 
   /** 실행되는 부분 */
   async slashrun(interaction: I) {
@@ -47,5 +48,9 @@ export default class ExampleCommand implements Command {
         color: client.embedcolor
       })
     ] }).then(m => client.msgdelete(m, 2));
+  }
+
+  help(): MessageEmbed {
+    return client.help(this.metadata.name, this.metadata, this.msgmetadata)!;
   }
 }

@@ -1,5 +1,5 @@
 import { client } from "./";
-import { guild_type } from "./database/obj/guild";
+import { guild_type } from "./database/Mysql";
 
 export function QUIZ_RULE(guildDB: guild_type): string {
   const list = [

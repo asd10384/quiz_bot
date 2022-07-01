@@ -107,16 +107,17 @@ export default class BotClient extends Client {
     return embed;
   }
 
-  help(name: string, metadata: ChatInputApplicationCommandData, slash?: boolean): MessageEmbed {
-    const prefix = slash ? '/' : this.prefix;
+
+  help(name: string, metadata: ChatInputApplicationCommandData, msgmetadata?: { name: string, des: string }[]): MessageEmbed | undefined {
+    const prefix = this.prefix;
     var text = "";
     metadata.options?.forEach((opt) => {
-      text += `${prefix}${name} ${opt.name}`;
+      text += `/${name} ${opt.name}`;
       if (opt.type === "SUB_COMMAND" && opt.options) {
         if (opt.options.length > 1) {
           text = "";
           opt.options.forEach((opt2) => {
-            text += `${prefix}${name} ${opt.name} [${opt2.type}] : ${opt.description}\n`;
+            text += `/${name} ${opt.name} [${opt2.type}] : ${opt.description}\n`;
           });
         } else {
           text += ` [${opt.options[0].type}] : ${opt.description}\n`;
@@ -125,8 +126,15 @@ export default class BotClient extends Client {
         text += ` : ${opt.description}\n`;
       }
     });
+    if (msgmetadata) {
+      text += `\n`;
+      msgmetadata.forEach((opt) => {
+        text += `${prefix}${name} ${opt.name} : ${opt.des}\n`;
+      });
+    }
+    if (!text || text.length == 0) return undefined;
     return this.mkembed({
-      title: `\` 역할 도움말 \``,
+      title: `\` ${name} 명령어 \``,
       description: text,
       color: this.embedcolor
     });

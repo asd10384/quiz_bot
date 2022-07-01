@@ -1,6 +1,6 @@
 import { client, handler } from '../index';
 import { Message } from 'discord.js';
-import MDB from "../database/Mongodb";
+import MDB from "../database/Mysql";
 
 export default async function onMessageCreate (message: Message) {
   if (message.author.bot || message.channel.type === 'DM') return;
@@ -32,11 +32,13 @@ export default async function onMessageCreate (message: Message) {
         const qc = client.getqc(message.guild!);
         if (qc.playing) {
           const text = message.content.trim().replace(/ +/g, " ").toLowerCase();
-          if (text === "스킵" || text === "skip") return qc.quiz_skip(message, message.author.id);
-          if (text === "힌트" || text === "hint") return qc.quiz_hint(message, message.author.id);
-          if (text === qc.nowplaying?.name.toLowerCase() && !qc.quizanser) {
-            qc.setquizanser(true);
-            return qc.quiz_anser(message, [], message.author.id);
+          if (text === "스킵" || text === "skip") return qc.skip(message, message.author.id);
+          if (text === "힌트" || text === "hint") return qc.hint(message, message.author.id);
+          if (text === qc.nowplaying?.name.toLowerCase() && !qc.cananser) {
+            qc.setcananser(true);
+            if (qc.playquiztype.quiz === "음악퀴즈") return qc.music_anser(message, [], message.author.id);
+            // if (qc.playquiztype.quiz === "그림퀴즈") return qc.img_anser(message, [], message.author.id);
+            return qc.stop(message.guild!);
           }
         } else {
           // 쿨타임

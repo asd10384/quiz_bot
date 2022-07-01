@@ -1,19 +1,19 @@
 import "dotenv/config";
 import { client } from "../index";
-import MDB from "../database/Mongodb";
+import MDB from "../database/Mysql";
 import { I, M } from "../aliases/discord.js";
 import { GuildMemberRoleManager, MessageEmbed, Permissions } from "discord.js";
 
 /**
  * DB
- * let guildDB = await MDB.get.guild(interaction);
+ * const guildDB = await MDB.get.guild(interaction);
  */
 
 export async function check_permission(msg: I | M): Promise<boolean> {
   if (process.env.ADMINID && (process.env.ADMINID === msg.member?.user.id)) return true;
   let userper = msg.member?.permissions as Permissions;
   if (userper) if (userper.has('ADMINISTRATOR')) return true;
-  let guildDB = await MDB.get.guild(msg.guild!);
+  const guildDB = await MDB.get.guild(msg.guild!);
   let guildrole = guildDB!.role;
   let userrole = msg.member?.roles as GuildMemberRoleManager;
   if (userrole) if (userrole.cache.some((role) => guildrole.includes(role.id))) return true;

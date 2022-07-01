@@ -3,12 +3,11 @@ import { check_permission as ckper, embed_permission as emper } from "../functio
 import { Command } from "../interfaces/Command";
 import { I, D } from "../aliases/discord.js.js";
 import { Message, MessageActionRow, MessageButton, StageChannel, VoiceChannel } from "discord.js";
-import MDB from "../database/Mongodb";
 import { DiscordGatewayAdapterCreator, joinVoiceChannel } from "@discordjs/voice";
 
 /**
  * DB
- * let guildDB = await MDB.get.guild(interaction);
+ * const guildDB = await MDB.get.guild(interaction);
  * 
  * check permission(role)
  * if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });

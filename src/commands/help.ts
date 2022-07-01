@@ -1,13 +1,11 @@
 import { client, handler } from "../index";
-import { check_permission as ckper, embed_permission as emper } from "../function/permission";
 import { Command } from "../interfaces/Command";
 import { I, D } from "../aliases/discord.js";
-import { CacheType, Message, MessageActionRow, MessageButton, MessageEmbed, MessageSelectMenu, SelectMenuInteraction } from "discord.js";
-import MDB from "../database/Mongodb";
+import { CacheType, Message, MessageActionRow, MessageEmbed, MessageSelectMenu, SelectMenuInteraction } from "discord.js";
 
 /**
  * DB
- * let guildDB = await MDB.get.guild(interaction);
+ * const guildDB = await MDB.get.guild(interaction);
  * 
  * check permission(role)
  * if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
@@ -35,28 +33,30 @@ export default class HelpCommand implements Command {
   }
   async menurun(interaction: SelectMenuInteraction<CacheType>, args: string[]) {
     const command = handler.commands.get(args[0]);
-    const embed = client.mkembed({ color: client.embedcolor });
+    var embed = client.mkembed({ color: client.embedcolor });
+    var embed2: MessageEmbed | undefined = undefined;
     if (command) {
-      embed.setTitle(`\` /${args[0]} \` 명령어`)
-        .setDescription(`이름: ${args[0]}\n설명: ${command.information ? command.information : command.description}`)
-        .setFooter({text: `도움말: /help`});
+      embed.setTitle(`\` /${args[0]} 도움말 \``)
+        .setDescription(`이름: ${args[0]}\n설명: ${command.information ? command.information : command.description}`);
+      embed2 = client.help(command.metadata.name, command.metadata, command.msgmetadata);
     } else {
-      embed.setTitle(`\` ${args[0]} \` 명령어`)
+      embed.setTitle(`\` ${args[0]} 도움말 \``)
         .setDescription(`명령어를 찾을수 없습니다.`)
-        .setFooter({text: `도움말: /help`})
-        .setColor('DARK_RED');
+        .setFooter({ text: `도움말: /help` })
+        .setColor("DARK_RED");
     }
+    if (embed2) return await interaction.editReply({ embeds: [ embed, embed2 ] });
     return await interaction.editReply({ embeds: [ embed ] });
   }
 
   gethelp(): { embeds: MessageEmbed[], components: MessageActionRow[] } {
     const slashcmdembed = client.mkembed({
-      title: `\` slash (/) \` 명령어`,
+      title: `\` slash (/) 도움말 \``,
       description: `명령어\n명령어 설명`,
       color: client.embedcolor
     });
     const msgcmdembed = client.mkembed({
-      title: `\` 기본 (${client.prefix}) \` 명령어`,
+      title: `\` 기본 (${client.prefix}) 도움말 \``,
       description: `명령어 [같은 명령어]\n명령어 설명`,
       footer: { text: `PREFIX: ${client.prefix}` },
       color: client.embedcolor

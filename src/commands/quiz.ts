@@ -4,14 +4,13 @@ import { check_permission as ckper, embed_permission as emper } from "../functio
 import { Command } from "../interfaces/Command";
 import { I, D, M } from "../aliases/discord.js.js";
 import { MessageEmbed, TextChannel } from "discord.js";
-import MDB from "../database/Mongodb";
-import { guild_type } from "../database/obj/guild";
+import MDB, { guild_type } from "../database/Mysql";
 import { QUIZ_RULE } from "../config";
 import { getuserchannel } from "../quiz/getchannel";
 
 /**
  * DB
- * let guildDB = await MDB.get.guild(interaction);
+ * const guildDB = await MDB.get.guild(interaction);
  * 
  * check permission(role)
  * if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
@@ -52,7 +51,7 @@ export default class 퀴즈Command implements Command {
     const cmd = interaction.options.getSubcommand();
     if (cmd === '채널생성') {
       if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
-      let guildDB = await MDB.get.guild(interaction.guild!);
+      const guildDB = await MDB.get.guild(interaction.guild!);
       if (!guildDB) return await interaction.editReply({ embeds: [ client.mkembed({
         title: `데이터베이스 오류`,
         description: "데이터베이스를 찾을수없음",
@@ -62,7 +61,7 @@ export default class 퀴즈Command implements Command {
     }
     if (cmd === 'fix') {
       if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
-      let guildDB = await MDB.get.guild(interaction.guild!);
+      const guildDB = await MDB.get.guild(interaction.guild!);
       if (!guildDB) return await interaction.editReply({ embeds: [ client.mkembed({
         title: `데이터베이스 오류`,
         description: "데이터베이스를 찾을수없음",
@@ -78,7 +77,7 @@ export default class 퀴즈Command implements Command {
   async msgrun(message: M, args: string[]): Promise<any> {
     const qc = client.getqc(message.guild!);
     if (args[0] === "시작") {
-      if (qc.page.player) {
+      if (qc.page.start.length > 0) {
         return message.channel.send({ embeds: [
           client.mkembed({
             title: `**퀴즈 시작 오류**`,
@@ -94,11 +93,11 @@ export default class 퀴즈Command implements Command {
           color: "DARK_RED"
         })
       ] }).then(m => client.msgdelete(m, 1));
-      return qc.quiz_start(message, message.author.id);
+      return qc.start(message, message.author.id);
     }
     if (args[0] === "중지" || args[0] === "종료") {
       message.delete().catch((err) => {});
-      return qc.quiz_stop(message.guild!);
+      return qc.stop(message.guild!);
     }
     if (args[0] === "설정") {
       if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] }).then(m => client.msgdelete(m, 1));
@@ -107,11 +106,13 @@ export default class 퀴즈Command implements Command {
     if (args[0] === "스킵") {
       message.delete().catch((err) => {});
       if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] }).then(m => client.msgdelete(m, 1));
-      return qc.quiz_anser(message, ["스킵", "관리자"], message.author.id);
+      if (qc.playquiztype.quiz === "음악퀴즈") return qc.music_anser(message, ["스킵", "관리자"], message.author.id);
+      // if (qc.playquiztype.quiz === "그림퀴즈") return qc.img_anser(message, ["스킵", "관리자"], message.author.id);
+      return qc.stop(message.guild!);
     }
     if (args[0] === "힌트") {
       if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] }).then(m => client.msgdelete(m, 1));
-      return qc.quiz_hint(message, message.author.id, true);
+      return qc.hint(message, message.author.id, true);
     }
     if (args[0] === "fix") {
       const guildDB = await MDB.get.guild(message.guild!);
@@ -149,7 +150,8 @@ export default class 퀴즈Command implements Command {
       type: 'GUILD_TEXT',
       topic: `퀴즈 시작: ${client.prefix}퀴즈 시작`
     });
-    const msg = await channel?.send({
+    if (!channel) return "오류";
+    const msg = await channel.send({
       content: `${QUIZ_RULE(guildDB)}ㅤ`,
       embeds: [
         client.mkembed({
@@ -161,7 +163,7 @@ export default class 퀴즈Command implements Command {
         })
       ]
     });
-    const score = await channel?.send({
+    const score = await channel.send({
       embeds: [
         client.mkembed({
           title: `**\` [ 퀴즈 스코어 ] \`**`,
@@ -170,24 +172,28 @@ export default class 퀴즈Command implements Command {
         })
       ]
     });
-    guildDB.channelId = channel?.id!;
-    guildDB.scoreId = score?.id!;
-    guildDB.msgId = msg?.id!;
-    await guildDB.save().catch((err) => { if (client.debug) console.log('데이터베이스오류:', err) });
-    return `<#${channel?.id!}> creation complete!`;
+    return await MDB.update.guild(guildDB.id, {
+      channelId: channel.id,
+      scoreId: score.id,
+      msgId: msg.id
+    }).then(() => {
+      return `<#${channel.id}> creation complete!`;
+    }).catch((err) => {
+      return `오류`;
+    });
   }
 
   async fix(message: M | I, guildDB: guild_type): Promise<string> {
-    let channel = message.guild?.channels.cache.get(guildDB.channelId);
-    if (channel) {
-      client.getqc(message.guild!).quiz_stop(message.guild!, true);
-      await (channel as TextChannel).messages.fetch().then((msg) => {
+    let channel = message.guild!.channels.cache.get(guildDB.channelId);
+    if (channel?.type === "GUILD_TEXT") {
+      client.getqc(message.guild!).stop(message.guild!, true);
+      await channel.messages.fetch().then((msg) => {
         try {
           if (msg.size > 0) (channel as TextChannel).bulkDelete(msg.size).catch((err) => { if (client.debug) console.log('메세지 전체 삭제 오류'); });
         } catch (err) {}
       });
     } else {
-      channel = await message.guild?.channels.create(`QUIZ_CHANNEL`, {
+      channel = await message.guild!.channels.create(`QUIZ_CHANNEL`, {
         type: 'GUILD_TEXT',
         topic: `퀴즈 시작: ${client.prefix}퀴즈 시작`
       });
@@ -214,10 +220,11 @@ export default class 퀴즈Command implements Command {
           })
         ]
       });
-      guildDB.channelId = channel?.id!;
-      guildDB.scoreId = score?.id!;
-      guildDB.msgId = msg?.id!;
-      await guildDB.save().catch((err) => { if (client.debug) console.log('데이터베이스오류:', err) });
+      await MDB.update.guild(guildDB.id, {
+        channelId: (channel as TextChannel).id,
+        scoreId: score.id,
+        msgId: msg.id
+      }).catch((err) => {});
     }, 350);
     return `fix 실행 완료.`;
   }

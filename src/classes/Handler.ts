@@ -7,11 +7,11 @@ import { client } from '../index';
 
 export default class SlashHandler {
   public commands: Collection<string, Command>;
-  public cooldown: { [key: string]: number };
+  public cooldown: Map<string, number>;
 
   constructor () {
     this.commands = new Collection();
-    this.cooldown = {};
+    this.cooldown = new Map();
 
     const commandPath = _.COMMANDS_PATH;
     const commandFiles = readdirSync(commandPath);
@@ -45,6 +45,14 @@ export default class SlashHandler {
     await client.application.commands.set([]);
     await client.application.commands.set(metadatas);
     console.log('Registered commands.');
+  }
+
+  public runCommand (interaction: CommandInteraction) {
+    const commandName = interaction.commandName;
+    const command = this.commands.get(commandName);
+
+    if (!command) return;
+    if (command.slashrun) command.slashrun(interaction);
   }
 
   err(message: Message, commandName: string | undefined | null) {

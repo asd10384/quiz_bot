@@ -1,13 +1,11 @@
 import { client } from "../index";
-import { check_permission as ckper, embed_permission as emper } from "../function/permission";
 import { Command } from "../interfaces/Command";
 import { I, D } from "../aliases/discord.js";
 import { Message, MessageActionRow, MessageButton, MessageEmbed } from "discord.js";
-import MDB from "../database/Mongodb";
 
 /**
  * DB
- * let guildDB = await MDB.get.guild(interaction);
+ * const guildDB = await MDB.get.guild(interaction);
  * 
  * check permission(role)
  * if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
@@ -25,6 +23,7 @@ export default class PingCommand implements Command {
     name: this.name,
     description: this.description
   };
+  msgmetadata?: { name: string; des: string; }[] = undefined;
 
   /** 실행되는 부분 */
   async slashrun(interaction: I) {
@@ -51,9 +50,9 @@ export default class PingCommand implements Command {
 
   ping(): { embeds: [ MessageEmbed ], components: [ MessageActionRow ] } {
     const id = Math.random().toString(36).substring(2, 5);
-    const actionRow = new MessageActionRow({ components: [
+    const actionRow = new MessageActionRow().addComponents(
       new MessageButton({ customId: id, label: '다시 측정', style: 'SUCCESS' })
-    ] });
+    );
     const embed = client.mkembed({
       title: `Pong!`,
       description: `**${client.ws.ping}ms**`,
