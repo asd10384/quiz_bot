@@ -1,22 +1,14 @@
-import { client, handler } from '../index';
-import { Message } from 'discord.js';
-import MDB from "../database/Mysql";
+import { client, handler } from "../index";
+import { ChannelType, Message } from 'discord.js';
+import QDB from "../database/Quickdb";
 
 export default async function onMessageCreate (message: Message) {
-  if (message.author.bot || message.channel.type === 'DM') return;
+  if (message.author.bot || message.channel.type === ChannelType.DM) return;
   if (message.content.startsWith(client.prefix)) {
     const content = message.content.slice(client.prefix.length).trim();
     const args = content.split(/ +/g);
     const commandName = args.shift()?.toLowerCase();
     const command = handler.commands.get(commandName!) || handler.commands.find((cmd) => cmd.aliases.includes(commandName!));
-    
-    const qc = client.getqc(message.guild!);
-    if (qc.cooldown+client.cooldowntime > Date.now()) return message.channel.send({ embeds: [ client.mkembed({
-      title: `너무 빨리 입력했습니다.`,
-      description: `${((qc.cooldown+client.cooldowntime-Date.now())/1000).toFixed(2)}초뒤,\n다시 시도해주세요.`,
-      color: "DARK_RED"
-    }) ] }).then(m => client.msgdelete(m, 1));
-    qc.setcooldown(Date.now());
     try {
       if (!command || !command.msgrun) return handler.err(message, commandName);
       command.msgrun(message, args);
@@ -24,11 +16,12 @@ export default async function onMessageCreate (message: Message) {
       if (client.debug) console.log(error); // 오류확인
       handler.err(message, commandName);
     } finally {
-      client.msgdelete(message, 100, true);
+      if (!commandName || commandName == '' || commandName.replace(/\;| +/g,"") === "") return;
+      client.msgdelete(message, 20, true);
     }
   } else {
-    return MDB.get.guild(message.guild!).then((guildID) => {
-      if (guildID!.channelId === message.channelId) {
+    QDB.get(message.guild!).then((guildDB) => {
+      if (guildDB.channelId === message.channelId) {
         const qc = client.getqc(message.guild!);
         if (qc.playing) {
           const text = message.content.trim().replace(/ +/g, " ").toLowerCase();
@@ -45,7 +38,7 @@ export default async function onMessageCreate (message: Message) {
           if (qc.cooldown+client.cooldowntime > Date.now()) return message.channel.send({ embeds: [ client.mkembed({
             title: `너무 빨리 입력했습니다.`,
             description: `${((qc.cooldown+client.cooldowntime-Date.now())/1000).toFixed(2)}초뒤,\n다시 시도해주세요.`,
-            color: "DARK_RED"
+            color: "DarkRed"
           }) ] }).then(m => client.msgdelete(m, 1));
           qc.setcooldown(Date.now());
           client.msgdelete(message, 100, true);

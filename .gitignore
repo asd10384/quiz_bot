@@ -23,4 +23,6 @@ dist/
 
 googlettsapi.json
 
-sound/ttssound/*
+sounds/
+
+test*.ts

@@ -1,25 +1,15 @@
 import "dotenv/config";
-import { ChatInputApplicationCommandData, Client, ClientEvents, ColorResolvable, EmbedFieldData, Guild, Message, MessageEmbed } from 'discord.js';
+import { ChatInputApplicationCommandData, Client, ClientEvents, ColorResolvable, Guild, Message, EmbedField, EmbedBuilder, ApplicationCommandOptionType } from 'discord.js';
 import _ from '../consts';
 import Quiz from "../quiz/quizClass";
 
-/**
- * 봇 클라이언트
- * 
- * 토큰, 세션관리 및 이벤트 레지스트리를 담당
- * * Disocrd.js Client의 확장
- * * 샤딩 지원
- */
 export default class BotClient extends Client {
   debug: boolean;
   prefix: string;
   msgdelete: (m: Message, deletetime: number, customtime?: boolean) => void;
+  sleep: (ms: number) => Promise<void>;
   deletetime: number;
-  ttsfilepath: string;
-  ttstimer: Map<string, { start: boolean, time: number }>;
-  ttstimertime: number;
   embedcolor: ColorResolvable;
-  maxqueue: number;
   quiz: Map<string, Quiz>;
   cooldowntime: number;
   /**
@@ -38,20 +28,21 @@ export default class BotClient extends Client {
     this.prefix = process.env.PREFIX || 'm;';
     this.login();
     this.deletetime = 6000; //초
-    this.ttsfilepath = (process.env.TTS_FILE_PATH) ? (process.env.TTS_FILE_PATH.endsWith('/')) ? process.env.TTS_FILE_PATH : process.env.TTS_FILE_PATH+'/' : '';
     this.msgdelete = (message: Message, time: number, customtime?: boolean) => {
       let dtime = (customtime) ? time : this.deletetime * time;
       if (dtime < 100) dtime = 100;
       setTimeout(() => {
         try {
-          message.delete().catch(() => {});
-        } catch {}
+          message.delete()
+        } catch(err) {}
       }, dtime);
     };
-    this.ttstimer = new Map<string, { start: boolean, time: number }>();
-    this.ttstimertime = (60) * 45; //분
-    this.embedcolor = process.env.EMBED_COLOR ? process.env.EMBED_COLOR as ColorResolvable : "ORANGE";
-    this.maxqueue = 30;
+    this.sleep = (ms: number) => {
+      return new Promise(res => setTimeout(res, ms));
+    }
+    this.embedcolor = process.env.EMBED_COLOR 
+      ? process.env.EMBED_COLOR.trim().charAt(0).toLocaleUpperCase() + process.env.EMBED_COLOR.trim().slice(1).toLocaleLowerCase() as ColorResolvable
+      : "Orange";
     this.quiz = new Map();
     this.cooldowntime = 1250;
   }
@@ -74,11 +65,6 @@ export default class BotClient extends Client {
    */
   public onEvent = (event: keyof ClientEvents, func: Function, ...extra: any[]) => this.on(event, (...args) => func(...args, ...extra));
 
-  public getqc = (guild: Guild): Quiz => {
-    if (!this.quiz.has(guild.id)) this.quiz.set(guild.id, new Quiz(guild));
-    return this.quiz.get(guild.id)!;
-  }
-
   mkembed(data: {
     title?: string,
     description?: string,
@@ -86,34 +72,35 @@ export default class BotClient extends Client {
     image?: string,
     thumbnail?: string,
     author?: { name: string, iconURL?: string, url?: string },
-    addField?: { name: string, value: string, inline?: boolean },
-    addFields?: EmbedFieldData[],
+    addFields?: EmbedField[],
     timestamp?: number | Date | undefined | null,
     footer?: { text: string, iconURL?: string },
     color?: ColorResolvable
-  }): MessageEmbed {
-    const embed = new MessageEmbed().setColor(this.embedcolor);
+  }): EmbedBuilder {
+    const embed = new EmbedBuilder();
     if (data.title) embed.setTitle(data.title);
     if (data.description) embed.setDescription(data.description);
     if (data.url) embed.setURL(data.url);
     if (data.image) embed.setImage(data.image);
     if (data.thumbnail) embed.setThumbnail(data.thumbnail);
-    if (data.author) embed.setAuthor(data.author.name, data.author.iconURL, data.author.url);
-    if (data.addField) embed.addField(data.addField.name, data.addField.value, data.addField.inline);
+    if (data.author) embed.setAuthor({ name: data.author.name, iconURL: data.author.iconURL, url: data.author.url });
     if (data.addFields) embed.addFields(data.addFields);
     if (data.timestamp) embed.setTimestamp(data.timestamp);
     if (data.footer) embed.setFooter({ text: data.footer.text, iconURL: data.footer.iconURL });
-    if (data.color) embed.setColor(data.color);
+    if (data.color) {
+      embed.setColor(data.color);
+    } else {
+      embed.setColor(this.embedcolor);
+    }
     return embed;
   }
 
-
-  help(name: string, metadata: ChatInputApplicationCommandData, msgmetadata?: { name: string, des: string }[]): MessageEmbed | undefined {
+  help(name: string, metadata: ChatInputApplicationCommandData, msgmetadata?: { name: string, des: string }[]): EmbedBuilder | undefined {
     const prefix = this.prefix;
     var text = "";
     metadata.options?.forEach((opt) => {
       text += `/${name} ${opt.name}`;
-      if (opt.type === "SUB_COMMAND" && opt.options) {
+      if (opt.type === ApplicationCommandOptionType.Subcommand && opt.options) {
         if (opt.options.length > 1) {
           text = "";
           opt.options.forEach((opt2) => {
@@ -138,5 +125,10 @@ export default class BotClient extends Client {
       description: text,
       color: this.embedcolor
     });
+  }
+
+  public getqc = (guild: Guild): Quiz => {
+    if (!this.quiz.has(guild.id)) this.quiz.set(guild.id, new Quiz(guild));
+    return this.quiz.get(guild.id)!;
   }
 }

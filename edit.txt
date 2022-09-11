@@ -1,0 +1,5 @@
+channel.messages -> (channel as TextChannel)
+channel.bulkDelete -> (channel as TextChannel).bulkDelete
+channel.send -> (channel as TextChannel).send
+
+type: ChannelType.GuildText, -> del

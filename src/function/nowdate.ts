@@ -5,7 +5,7 @@ export default function nowdate() {
   return `${
     date.getFullYear()
   }년 ${
-    az(date.getMonth())
+    az(date.getMonth()+1)
   }월 ${
     az(date.getDate())
   }일 (${

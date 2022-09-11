@@ -6,8 +6,9 @@ export function getuserchannel(member: GuildMember | undefined) {
   if (member?.voice.channelId) return member.voice.channel;
   return undefined;
 }
-export function getbotchannel(guild: Guild) {
-  if (guild.me?.voice.channelId) return guild.me.voice.channel;
+export async function getbotchannel(guild: Guild) {
+  const bot = await guild.members.fetchMe({ cache: true });
+  if (bot?.voice.channelId) return bot.voice.channel;
   // if (message.member?.voice.channelId) return message.member?.voice.channel;
   return undefined;
 }

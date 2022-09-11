@@ -1,7 +1,7 @@
 import { client } from "./";
-import { guild_type } from "./database/Mysql";
+import { qdbdata } from "./database/Quickdb";
 
-export function QUIZ_RULE(guildDB: guild_type): string {
+export function QUIZ_RULE(guildDB: qdbdata): string {
   const list = [
     `명령어는 \` ${client.prefix}퀴즈 도움말 \`로 확인할수 있습니다.`,
     `정답은 채팅창에 그냥 입력하시면 됩니다.`,

@@ -2,12 +2,12 @@ import { client } from "../index";
 import { check_permission as ckper, embed_permission as emper } from "../function/permission";
 import { Command } from "../interfaces/Command";
 import { I, D } from "../aliases/discord.js";
-import { Message, MessageActionRow, MessageButton, MessageEmbed } from "discord.js";
-import MDB from "../database/Mysql";
+import { Message, ActionRowBuilder, ButtonBuilder, EmbedBuilder, ApplicationCommandOptionType } from "discord.js";
+import QDB from "../database/Quickdb";
 
 /**
  * DB
- * const guildDB = await MDB.get.guild(interaction.guild!);
+ * let guildDB = await MDB.get.guild(interaction.guild!);
  * 
  * check permission(role)
  * if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
@@ -21,21 +21,43 @@ export default class ExampleCommand implements Command {
   visible = true;
   description = "";
   information = "";
-  aliases = [];
-  metadata = <D>{
+  aliases: string[] = [];
+  metadata: D = {
     name: this.name,
-    description: this.description
+    description: this.description,
+    options: [
+      {
+        type: ApplicationCommandOptionType.Subcommand,
+        name: "test",
+        description: "test",
+        options: [{
+          type: ApplicationCommandOptionType.String,
+          name: "test2",
+          description: "test2"
+        }]
+      }
+    ]
   };
   msgmetadata?: { name: string; des: string; }[] = undefined;
 
   /** 실행되는 부분 */
   async slashrun(interaction: I) {
+    const cmd = interaction.options.data[0];
+    if (cmd.name === "test") {
+      const data = cmd.options ? cmd.options[0]?.value : undefined;
+      if (data) return await interaction.editReply({ embeds: [
+        client.mkembed({
+          title: data as string,
+          description: data as string,
+          footer: { text: data as string }
+        })
+      ] });
+    }
     return await interaction.editReply({ embeds: [
       client.mkembed({
         title: `example`,
         description: `example`,
-        footer: { text: `example` },
-        color: client.embedcolor
+        footer: { text: `example` }
       })
     ] });
   }
@@ -50,7 +72,7 @@ export default class ExampleCommand implements Command {
     ] }).then(m => client.msgdelete(m, 2));
   }
 
-  help(): MessageEmbed {
+  help(): EmbedBuilder {
     return client.help(this.metadata.name, this.metadata, this.msgmetadata)!;
   }
 }

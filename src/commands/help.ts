@@ -1,11 +1,11 @@
 import { client, handler } from "../index";
 import { Command } from "../interfaces/Command";
 import { I, D } from "../aliases/discord.js";
-import { CacheType, Message, MessageActionRow, MessageEmbed, MessageSelectMenu, SelectMenuInteraction } from "discord.js";
+import { CacheType, Message, ActionRowBuilder, EmbedBuilder, SelectMenuBuilder, SelectMenuInteraction } from "discord.js";
 
 /**
  * DB
- * const guildDB = await MDB.get.guild(interaction);
+ * let guildDB = await MDB.get.guild(interaction);
  * 
  * check permission(role)
  * if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
@@ -18,8 +18,8 @@ export default class HelpCommand implements Command {
   visible = true;
   description = "명령어 확인";
   information = "명령어 확인";
-  aliases = [ "도움말" ];
-  metadata = <D>{
+  aliases: string[] = [ "도움말" ];
+  metadata: D = {
     name: this.name,
     description: this.description
   };
@@ -34,7 +34,7 @@ export default class HelpCommand implements Command {
   async menurun(interaction: SelectMenuInteraction<CacheType>, args: string[]) {
     const command = handler.commands.get(args[0]);
     var embed = client.mkembed({ color: client.embedcolor });
-    var embed2: MessageEmbed | undefined = undefined;
+    var embed2: EmbedBuilder | undefined = undefined;
     if (command) {
       embed.setTitle(`\` /${args[0]} 도움말 \``)
         .setDescription(`이름: ${args[0]}\n설명: ${command.information ? command.information : command.description}`);
@@ -43,13 +43,13 @@ export default class HelpCommand implements Command {
       embed.setTitle(`\` ${args[0]} 도움말 \``)
         .setDescription(`명령어를 찾을수 없습니다.`)
         .setFooter({ text: `도움말: /help` })
-        .setColor("DARK_RED");
+        .setColor('DarkRed');
     }
     if (embed2) return await interaction.editReply({ embeds: [ embed, embed2 ] });
     return await interaction.editReply({ embeds: [ embed ] });
   }
 
-  gethelp(): { embeds: MessageEmbed[], components: MessageActionRow[] } {
+  gethelp(): { embeds: EmbedBuilder[], components: ActionRowBuilder<SelectMenuBuilder>[] } {
     const slashcmdembed = client.mkembed({
       title: `\` slash (/) 도움말 \``,
       description: `명령어\n명령어 설명`,
@@ -65,13 +65,13 @@ export default class HelpCommand implements Command {
     handler.commands.forEach((cmd) => {
       if (cmd.slashrun && cmd.visible) {
         cmdlist.push({ label: `/${cmd.name}`, description: `${cmd.information ? cmd.information : cmd.description}`, value: `${cmd.name}` });
-        slashcmdembed.addField(`**/${cmd.name}**`, `${cmd.information ? cmd.information : cmd.description ? cmd.description : "-"}`, true);
+        slashcmdembed.addFields([{ name: `**/${cmd.name}**`, value: `${cmd.information ? cmd.information : cmd.description ? cmd.description : "-"}`, inline: true }]);
       }
     });
     handler.commands.forEach((cmd) => {
       if (cmd.msgrun && cmd.visible) {
         // cmdlist.push({ label: `${client.prefix}${cmd.metadata.name} [${(cmd.metadata.aliases) ? cmd.metadata.aliases : ''}]`, description: `${cmd.metadata.description}`, value: `${cmd.metadata.name}` });
-        msgcmdembed.addField(`**${client.prefix}${cmd.name}${(cmd.aliases && cmd.aliases.length > 0) ? ` [ ${cmd.aliases} ]` : ""}**`, `${cmd.information ? cmd.information : cmd.description ? cmd.description : "-"}`, true);
+        msgcmdembed.addFields([{ name: `**${client.prefix}${cmd.name}${(cmd.aliases && cmd.aliases.length > 0) ? ` [ ${cmd.aliases} ]` : ""}**`, value: `${cmd.information ? cmd.information : cmd.description ? cmd.description : "-"}`, inline: true }]);
       }
     });
     const rowhelp = client.mkembed({
@@ -80,8 +80,8 @@ export default class HelpCommand implements Command {
       footer: { text: '여러번 가능' },
       color: client.embedcolor
     });
-    const row = new MessageActionRow().addComponents(
-      new MessageSelectMenu()
+    const row = new ActionRowBuilder<SelectMenuBuilder>().addComponents(
+      new SelectMenuBuilder()
         .setCustomId('help')
         .setPlaceholder('명령어를 선택해주세요.')
         .addOptions(cmdlist)

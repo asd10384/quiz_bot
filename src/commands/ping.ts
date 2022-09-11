@@ -1,11 +1,11 @@
 import { client } from "../index";
 import { Command } from "../interfaces/Command";
-import { I, D } from "../aliases/discord.js";
-import { Message, MessageActionRow, MessageButton, MessageEmbed } from "discord.js";
+import { I, D, B } from "../aliases/discord.js";
+import { Message, ActionRowBuilder, ButtonBuilder, EmbedBuilder, ButtonStyle, ActionRow, MessageActionRowComponent, ActionRowComponent } from "discord.js";
 
 /**
  * DB
- * const guildDB = await MDB.get.guild(interaction);
+ * let guildDB = await MDB.get.guild(interaction);
  * 
  * check permission(role)
  * if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
@@ -18,8 +18,8 @@ export default class PingCommand implements Command {
   visible = true;
   description = "PONG!";
   information = "핑 확인";
-  aliases = [ "핑" ];
-  metadata = <D>{
+  aliases: string[] = [ "핑" ];
+  metadata: D = {
     name: this.name,
     description: this.description
   };
@@ -27,31 +27,21 @@ export default class PingCommand implements Command {
 
   /** 실행되는 부분 */
   async slashrun(interaction: I) {
-    const id = Math.random().toString(36).substring(2, 5);
-    await interaction.editReply(this.ping());
-    const i = await interaction.channel?.awaitMessageComponent({
-      filter: (i) => i.customId === id && i.user.id === interaction.user.id,
-      componentType: 'BUTTON'
-    });
-    if (!i) return;
-    await i.deferReply();
-    this.slashrun(i as unknown as I);
+    return await interaction.editReply(this.ping());
   }
   async msgrun(message: Message, args: string[]) {
-    const id = Math.random().toString(36).substring(2, 5);
-    message.channel.send(this.ping()).then(m => client.msgdelete(m, 3));
-    const i = await message.channel?.awaitMessageComponent({
-      filter: (i) => i.customId === id && i.user.id === message.member?.id,
-      componentType: 'BUTTON'
-    });
-    if (!i) return;
-    this.msgrun(i as unknown as Message, []);
+    return message.channel.send(this.ping()).then(m => client.msgdelete(m, 3));
+  }
+  async buttonrun(interaction: B, args: string[]) {
+    return await interaction.editReply(this.ping());
   }
 
-  ping(): { embeds: [ MessageEmbed ], components: [ MessageActionRow ] } {
-    const id = Math.random().toString(36).substring(2, 5);
-    const actionRow = new MessageActionRow().addComponents(
-      new MessageButton({ customId: id, label: '다시 측정', style: 'SUCCESS' })
+  ping(): { embeds: [ EmbedBuilder ], components: [ ActionRowBuilder<ButtonBuilder> ] } {
+    const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setCustomId("ping-restart")
+        .setLabel("다시 측정")
+        .setStyle(ButtonStyle.Success)
     );
     const embed = client.mkembed({
       title: `Pong!`,

@@ -1,16 +1,12 @@
 import { client } from '../index';
 import { MessageReaction, PartialMessageReaction, PartialUser, User } from 'discord.js';
-import MDB from "../database/Mysql";
+import QDB from "../database/Quickdb";
 
 export default async function onmessageReactionAdd (reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) {
   if (user.bot) return;
   if (!reaction.message.guildId) return;
 
-  const guildDB = await MDB.get.guild(reaction.message.guild!);
-  if (!guildDB) {
-    console.log('reaction 데이터베이스 검색 실패');
-    return;
-  }
+  const guildDB = await QDB.get(reaction.message.guild!);
   const qc = client.getqc(reaction.message.guild!);
 
   if (reaction.message.partial) await reaction.message.fetch();
@@ -33,7 +29,7 @@ export default async function onmessageReactionAdd (reaction: MessageReaction | 
         client.mkembed({
           title: `**퀴즈 오류**`,
           description: `<@${qc.page.start}>님이 먼저 사용하셨습니다.`,
-          color: "DARK_RED"
+          color: "DarkRed"
         })
       ] }).then(m => client.msgdelete(m, 1));
       return reaction.users.remove(user.id);
@@ -43,7 +39,7 @@ export default async function onmessageReactionAdd (reaction: MessageReaction | 
         client.mkembed({
           title: `**퀴즈 오류**`,
           description: `이모지를 너무 빨리 눌렀습니다.\n${((qc.cooldown+client.cooldowntime-Date.now())/1000).toFixed(2)}초 뒤에 사용해주세요.`,
-          color: "DARK_RED"
+          color: "DarkRed"
         })
       ] }).then(m => client.msgdelete(m, 1));
       return reaction.users.remove(user.id);
