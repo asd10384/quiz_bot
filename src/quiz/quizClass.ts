@@ -207,9 +207,8 @@ export default class Quiz {
   }
   
   async stop(guild: Guild, no?: boolean) {
-    if (!no) await this.bulkmessage(guild);
     const guildDB = await QDB.get(guild);
-    if (!guildDB) return;
+    if (!no) await this.bulkmessage(guild);
     const channel = guild.channels.cache.get(guildDB.channelId);
     if (channel?.type === ChannelType.GuildText) {
       const msg = (channel as TextChannel).messages.cache.get(guildDB.msgId);
@@ -599,8 +598,8 @@ export default class Quiz {
     this.count[0] = this.count[0] + 1;
     this.anserdata[0] = userId;
     const time = guildDB.options.nexttime;
-    await this.bulkmessage(message.guild!);
     this.setmsg(message.guild!, anser_user, time);
+    await this.bulkmessage(message.guild!);
     setTimeout(() => {
       const vc = getVoiceConnection(message.guildId!);
       if (vc && this.playing && this.queue.length > 0) {
@@ -620,25 +619,17 @@ export default class Quiz {
       if (guildDB) {
         const channel = guild.channels.cache.get(guildDB.channelId);
         if (channel?.type === ChannelType.GuildText) {
-          if (!(channel as TextChannel).messages.cache.get(guildDB.msgId)) {
-            (channel as TextChannel).messages.fetch().then(async (ms) => {
+          if (!(channel as TextChannel).messages.cache.get(guildDB.msgId) || !(channel as TextChannel).messages.cache.get(guildDB.scoreId)) {
+            (channel as TextChannel).messages.fetch({ cache: true }).then(async (ms) => {
               if (ms.size > 0) await (channel as TextChannel).bulkDelete(ms.size).catch(() => {});
               const msg = await (channel as TextChannel).send({ content: "퀴즈오류해결중..." });
               const score = await (channel as TextChannel).send({ content: "스코어보드오류해결중..." });
               client.getqc(guild).sendlog(`${guild.name} {\n  err: 퀴즈오류 + 스코어보드오류 해결중\n}`);
               QDB.set(guild.id, { msgId: msg.id, scoreId: score.id }).then(() => {
-                setTimeout(() => this.setmsg(guild), 600);
-              }).catch((err) => {});
-            }).catch((err) => {});
-            return;
-          }
-          if (!(channel as TextChannel).messages.cache.get(guildDB.scoreId)) {
-            (channel as TextChannel).messages.fetch({ after: guildDB.msgId }).then(async (ms) => {
-              if (ms.size > 0) await (channel as TextChannel).bulkDelete(ms.size).catch(() => {});
-              const score = await (channel as TextChannel).send({ content: "스코어보드오류해결중..." });
-              client.getqc(guild).sendlog(`${guild.name} {\n  err: 스코어보드오류 해결중\n}`);
-              QDB.set(guild.id, { scoreId: score.id }).then(() => {
-                setTimeout(() => this.score(guild), 600);
+                setTimeout(() => {
+                  this.setmsg(guild);
+                  this.score(guild);
+                }, 600);
               }).catch((err) => {});
             }).catch((err) => {});
             return;
@@ -654,7 +645,10 @@ export default class Quiz {
         if (guildDB) {
           const embed = this.setscoreembed();
           const channel = guild.channels.cache.get(guildDB.channelId);
-          if (channel?.type === ChannelType.GuildText) (channel as TextChannel).messages.cache.get(guildDB.scoreId)?.edit({ content: "", embeds: [ embed ] });
+          if (channel?.type === ChannelType.GuildText) {
+            const scoremsg = (channel as TextChannel).messages.cache.get(guildDB.scoreId);
+            if (scoremsg) scoremsg.edit({ content: "", embeds: [ embed ] });
+          }
         }
       }).catch((err) => {});
     }, 50);

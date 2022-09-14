@@ -35,9 +35,9 @@ function quizfix() {
       if (guildDB.id && guildDB.channelId) {
         const channel = client.guilds.cache.get(guildDB.id)?.channels.cache.get(guildDB.channelId);
         if (channel?.type === ChannelType.GuildText) {
-          (channel as TextChannel).messages.fetch().then(async (msgs) => {
+          await (channel as TextChannel).messages.fetch().then(async (msgs) => {
             try {
-              if (msgs.size > 0) (channel as TextChannel).bulkDelete(msgs.size).catch((err) => {
+              if (msgs.size > 0) await (channel as TextChannel).bulkDelete(msgs.size).catch((err) => {
                 if (client.debug) console.log('메세지 전체 삭제 오류');
               });
             } catch {}
@@ -63,9 +63,17 @@ function quizfix() {
               })
             ]
           });
-          console.log(`${msg.guild!.name} {\n  fix: 시작 fix 성공\n}`);
-          client.getqc(msg.guild!).sendlog(`${msg.guild!.name} {\n  fix: 시작 fix 성공\n}`);
-          return await QDB.set(guildDB.id, { msgId: msg.id, scoreId: score.id }).catch((err) => {});
+          return await QDB.set(guildDB.id, { msgId: msg.id, scoreId: score.id }).then((val) => {
+            if (val) {
+              console.log(`${msg.guild!.name} {\n  fix: 시작 fix 성공\n}`);
+              client.getqc(msg.guild!).sendlog(`${msg.guild!.name} {\n  fix: 시작 fix 성공\n}`);
+            } else {
+              console.log(`${msg.guild!.name} {\n  fix: 시작 fix 실패\n}`);
+              client.getqc(msg.guild!).sendlog(`${msg.guild!.name} {\n  fix: 시작 fix 실패\n}`);
+            }
+          }).catch((err) => {
+            console.log(`${msg.guild!.name} {\n  fix: 시작 fix 실패 ERR\n}`);
+          });
         }
       }
     });

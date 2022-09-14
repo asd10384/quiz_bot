@@ -5,6 +5,7 @@ import { I, D } from "../aliases/discord.js.js";
 import { Message, ActionRowBuilder, ButtonBuilder, EmbedBuilder, ApplicationCommandOptionType, TextChannel, ChannelType } from "discord.js";
 import QDB, { qdbdata } from "../database/Quickdb";
 import { QUIZ_RULE } from "../config";
+import { getuserchannel } from "../quiz/getChannel";
 
 /**
  * DB
@@ -64,18 +65,75 @@ export default class ExampleCommand implements Command {
     }
   }
   async msgrun(message: Message, args: string[]) {
-    return message.channel.send({ embeds: [
-      client.mkembed({
-        title: `example`,
-        description: `example`,
-        footer: { text: `example` },
-        color: client.embedcolor
-      })
-    ] }).then(m => client.msgdelete(m, 2));
+    const qc = client.getqc(message.guild!);
+    if (args[0] === "시작") {
+      client.msgdelete(message, 10, true);
+      if (qc.page.start.length > 0) {
+        return message.channel.send({ embeds: [
+          client.mkembed({
+            title: `**퀴즈 시작 오류**`,
+            description: `이미 퀴즈가 시작되었습니다.`,
+            color: "DarkRed"
+          })
+        ] }).then(m => client.msgdelete(m, 1));
+      }
+      if (!getuserchannel(message.member!)) return message.channel.send({ embeds: [
+        client.mkembed({
+          title: `\` 음성 오류 \``,
+          description: `먼저 음성채널에 들어간뒤 사용해주세요.`,
+          color: "DarkRed"
+        })
+      ] }).then(m => client.msgdelete(m, 1));
+      return qc.start(message, message.author.id);
+    }
+    if (args[0] === "중지" || args[0] === "종료") {
+      return qc.stop(message.guild!);
+    }
+    if (args[0] === "설정") {
+      client.msgdelete(message, 10, true);
+      if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] }).then(m => client.msgdelete(m, 1));
+      return message.channel.send({ content: "현재 제작중 입니다." }).then(m => client.msgdelete(m, 1));
+    }
+    if (args[0] === "스킵") {
+      client.msgdelete(message, 10, true);
+      if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] }).then(m => client.msgdelete(m, 1));
+      if (qc.playquiztype.quiz === "음악퀴즈") return qc.music_anser(message, ["스킵", "관리자"], message.author.id);
+      // if (qc.playquiztype.quiz === "그림퀴즈") return qc.img_anser(message, ["스킵", "관리자"], message.author.id);
+      return qc.stop(message.guild!);
+    }
+    if (args[0] === "힌트") {
+      client.msgdelete(message, 10, true);
+      if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] }).then(m => client.msgdelete(m, 1));
+      return qc.hint(message, message.author.id, true);
+    }
+    if (args[0] === "fix") {
+      const guildDB = await QDB.get(message.guild!);
+      if (!guildDB) return message.channel.send({ embeds: [ client.mkembed({
+        title: `데이터베이스 오류`,
+        description: "데이터베이스를 찾을수없음",
+        color: "DarkRed"
+      }) ] }).then(m => client.msgdelete(m, 1));
+      return this.fix(message, guildDB);
+    }
+    if (args[0] === "도움말" || args[0] === "help") return message.channel.send({ embeds: [ this.help() ] }).then(m => client.msgdelete(m, 4.5));
+    return;
   }
 
   help(): EmbedBuilder {
-    return client.help(this.metadata.name, this.metadata, this.msgmetadata)!;
+    return client.mkembed({
+      title: `\` 퀴즈 도움말 \``,
+      description: `
+        \` 명령어 \`
+        ${client.prefix}퀴즈 시작 : 퀴즈를 시작합니다.
+        ${client.prefix}퀴즈 중지 : 진행중인 퀴즈를 멈춥니다.
+        ${client.prefix}퀴즈 설정 : 정답형식이나 시간을 설정할수 있습니다.
+        \` 관리자 명령어 \`
+        /퀴즈 기본설정 : 퀴즈를 사용할 채널을 생성합니다.
+        /퀴즈 fix : 퀴즈 채널의 오류를 수정합니다.
+        ${client.prefix}퀴즈 스킵 : 투표없이 스킵합니다.
+        ${client.prefix}퀴즈 힌트 :투표없이 힌트를 받습니다.
+      `
+    });
   }
   
   async create_channel(message: Message | I, guildDB: qdbdata): Promise<string> {

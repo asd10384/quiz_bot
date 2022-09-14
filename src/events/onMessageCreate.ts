@@ -17,7 +17,7 @@ export default async function onMessageCreate (message: Message) {
       handler.err(message, commandName);
     } finally {
       if (!commandName || commandName == '' || commandName.replace(/\;| +/g,"") === "") return;
-      client.msgdelete(message, 20, true);
+      if (!(commandName === "quiz" || commandName === "퀴즈")) client.msgdelete(message, 20, true);
     }
   } else {
     QDB.get(message.guild!).then((guildDB) => {
@@ -35,13 +35,15 @@ export default async function onMessageCreate (message: Message) {
           }
         } else {
           // 쿨타임
-          if (qc.cooldown+client.cooldowntime > Date.now()) return message.channel.send({ embeds: [ client.mkembed({
-            title: `너무 빨리 입력했습니다.`,
-            description: `${((qc.cooldown+client.cooldowntime-Date.now())/1000).toFixed(2)}초뒤,\n다시 시도해주세요.`,
-            color: "DarkRed"
-          }) ] }).then(m => client.msgdelete(m, 1));
+          if (qc.cooldown+client.cooldowntime > Date.now()) {
+            client.msgdelete(message, 100, true);
+            return message.channel.send({ embeds: [ client.mkembed({
+              title: `너무 빨리 입력했습니다.`,
+              description: `${((qc.cooldown+client.cooldowntime-Date.now())/1000).toFixed(2)}초뒤,\n다시 시도해주세요.`,
+              color: "DarkRed"
+            }) ] }).then(m => client.msgdelete(m, 1));
+          }
           qc.setcooldown(Date.now());
-          client.msgdelete(message, 100, true);
           const command = handler.commands.get("퀴즈");
           if (command && command.msgrun) return command.msgrun(message, message.content.trim().split(/ +/g));
         }
