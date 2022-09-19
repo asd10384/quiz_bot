@@ -179,7 +179,7 @@ export default class ExampleCommand implements Command {
     let channel = message.guild!.channels.cache.get(guildDB.channelId);
     if (channel?.type === ChannelType.GuildText) {
       client.getqc(message.guild!).stop(message.guild!, true);
-      await (channel as TextChannel).messages.fetch().then((msg) => {
+      await (channel as TextChannel).messages.fetch({ cache: true }).then((msg) => {
         try {
           if (msg.size > 0) (channel as TextChannel).bulkDelete(msg.size).catch((err) => { if (client.debug) console.log('메세지 전체 삭제 오류'); });
         } catch (err) {}

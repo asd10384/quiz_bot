@@ -169,41 +169,11 @@ export default class Quiz {
     const guildDB = await QDB.get(guild);
     const channel = guild.channels.cache.get(guildDB.channelId);
     if (!channel || channel.type !== ChannelType.GuildText) return;
-    await (channel as TextChannel).messages.fetch({ after: guildDB.scoreId }).then(async (ms) => {
-      if (ms.size > 0) await (channel as TextChannel).bulkDelete(ms.size).catch(() => {});
-    });
-    await sleep(50);
-    if (!guildDB.msgId) {
-      const msg = await (channel as TextChannel).send({
-        content: `${QUIZ_RULE(guildDB!)}ㅤ`,
-        embeds: [
-          client.mkembed({
-            title: `**현재 퀴즈가 시작되지 않았습니다**`,
-            description: `**정답설정: ${guildDB.options.anser}**\n**다음문제시간: ${guildDB.options.nexttime}초**`,
-            image: `https://ytms.netlify.app/defult.png`,
-            footer: { text: `${client.prefix}퀴즈 도움말` }
-          })
-        ]
-      }).catch((err) => {
-        return undefined;
+    try {
+      await (channel as TextChannel).messages.fetch({ after: guildDB.scoreId, cache: true }).then(async (ms) => {
+        if (ms.size > 0) await (channel as TextChannel).bulkDelete(ms.size).catch(() => {});
       });
-      if (!msg) return this.stop(guild);
-      await QDB.set(guildDB.id, { msgId: msg.id }).catch((err) => {});
-    }
-    if (!guildDB.scoreId) {
-      const score = await (channel as TextChannel).send({
-        embeds: [
-          client.mkembed({
-            title: `**\` [ 퀴즈 스코어 ] \`**`,
-            description: `**1.** 없음\n\n스킵한 문제: 0개`,
-            footer: { text: "스코어는 다음퀴즈 전까지 사라지지 않습니다." }
-          })
-        ]
-      });
-      await QDB.set(guild.id, { scoreId: score.id }).catch(err => {});
-    }
-    await sleep(25);
-    return null;
+    } catch {};
   }
   
   async stop(guild: Guild, no?: boolean) {

@@ -35,7 +35,7 @@ function quizfix() {
       if (guildDB.id && guildDB.channelId) {
         const channel = client.guilds.cache.get(guildDB.id)?.channels.cache.get(guildDB.channelId);
         if (channel?.type === ChannelType.GuildText) {
-          await (channel as TextChannel).messages.fetch().then(async (msgs) => {
+          await (channel as TextChannel).messages.fetch({ cache: true }).then(async (msgs) => {
             try {
               if (msgs.size > 0) await (channel as TextChannel).bulkDelete(msgs.size).catch((err) => {
                 if (client.debug) console.log('메세지 전체 삭제 오류');
