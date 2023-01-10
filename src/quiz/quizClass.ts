@@ -176,10 +176,10 @@ export class Quiz {
     } catch {};
   }
   
-  async stop(guild: Guild, no?: boolean) {
-    const guildDB = await QDB.guild.get(guild);
-    if (!no) await this.bulkmessage(guild);
-    const channel = guild.channels.cache.get(guildDB.channelId);
+  async stop(no?: boolean) {
+    const guildDB = await QDB.guild.get(this.guild);
+    if (!no) await this.bulkmessage(this.guild);
+    const channel = this.guild.channels.cache.get(guildDB.channelId);
     if (channel?.type === ChannelType.GuildText) {
       const msg = channel.messages.cache.get(guildDB.msgId);
       msg?.reactions.removeAll();
@@ -199,14 +199,14 @@ export class Quiz {
       list: [],
       page: [],
       nownummax: [ 0, 0 ],
-      nowpage: 0,
+      nowpage: 0
     };
     this.scoredata = [];
     this.cananser = false;
     this.reset_skip(false);
     this.reset_hint(false);
-    this.setmsg(guild);
-    getVoiceConnection(guild.id)?.disconnect();
+    this.setmsg(this.guild);
+    getVoiceConnection(this.guild.id)?.disconnect();
   }
 
   setmsg(guild: Guild, anser_user?: string, time?: number) {
@@ -378,7 +378,7 @@ export class Quiz {
       return undefined;
     });
     if (!$) {
-      this.stop(this.guild);
+      this.stop();
       await sleep(100);
       return message.channel.send({ embeds: [ client.mkembed({
         title: `오류발생`,
@@ -418,7 +418,7 @@ export class Quiz {
     this.count = [ 1, second.length ];
     if (this.playquiztype.quiz === "음악퀴즈") return this.music_quiz(message, userId);
     // if (this.playquiztype.quiz === "그림퀴즈") return this.img_quiz(message, userId);
-    this.stop(this.guild);
+    this.stop();
     await sleep(100);
     return message.channel.send({ embeds: [ client.mkembed({
       title: `퀴즈오류`,
@@ -443,9 +443,9 @@ export class Quiz {
         color: "DarkRed"
       })
     ] }).then(m => client.msgdelete(m, 1));
-    if (this.count[0] > this.count[1]) return this.stop(this.guild);
+    if (this.count[0] > this.count[1]) return this.stop();
     const data = this.queue.shift();
-    if (!data) return this.stop(this.guild);
+    if (!data) return this.stop();
     this.nowplaying = data;
     this.playing = true;
     this.anserdata[0] = "";
@@ -469,14 +469,14 @@ export class Quiz {
       Player.stop();
       if (this.playquiztype.quiz === "음악퀴즈") return this.music_anser(message, ["스킵", "오류"], userId);
       // if (this.playquiztype.quiz === "그림퀴즈") return this.img_anser(message, ["스킵", "오류"], userId);
-      return this.stop(this.guild);
+      return this.stop();
     });
     connection.on("error", (err) => {
       if (client.debug) Logger.log("connection 오류: " + err);
       Player.stop();
       if (this.playquiztype.quiz === "음악퀴즈") return this.music_anser(message, ["스킵", "오류"], userId);
       // if (this.playquiztype.quiz === "그림퀴즈") return this.img_anser(message, ["스킵", "오류"], userId);
-      return this.stop(this.guild);
+      return this.stop();
     });
     var checkvideo = await ytdl.getInfo(this.nowplaying.link, {
       lang: "KR",
@@ -489,7 +489,7 @@ export class Quiz {
       Player.stop();
       if (this.playquiztype.quiz === "음악퀴즈") return this.music_anser(message, ["스킵", "오류"], userId);
       // if (this.playquiztype.quiz === "그림퀴즈") return this.img_anser(message, ["스킵", "오류"], userId);
-      return this.stop(this.guild);
+      return this.stop();
     }
     var ytsource: internal.Readable | undefined = undefined;
     try {
@@ -513,7 +513,7 @@ export class Quiz {
       Player.stop();
       if (this.playquiztype.quiz === "음악퀴즈") return this.music_anser(message, ["스킵", "오류"], userId);
       // if (this.playquiztype.quiz === "그림퀴즈") return this.img_anser(message, ["스킵", "오류"], userId);
-      return this.stop(this.guild);
+      return this.stop();
     }
     this.cananser = false;
     await entersState(connection, VoiceConnectionStatus.Ready, 30_000).catch(() => {});
@@ -532,11 +532,11 @@ export class Quiz {
         Player.stop();
         if (this.playquiztype.quiz === "음악퀴즈") this.music_anser(message, ["스킵", "시간초과"], userId);
         // else if (this.playquiztype.quiz === "그림퀴즈") this.img_anser(message, ["스킵", "시간초과"], userId);
-        else this.stop(this.guild);
+        else this.stop();
       }
     });
     connection.on(VoiceConnectionStatus.Disconnected, () => {
-      this.stop(this.guild);
+      this.stop();
       connection?.disconnect();
     });
     return subscription;
@@ -579,10 +579,10 @@ export class Quiz {
         try {
           this.music_quiz(message, userId);
         } catch {
-          this.stop(this.guild);
+          this.stop();
         }
       } else {
-        this.stop(this.guild);
+        this.stop();
       }
     }, time * 1000);
   }
@@ -655,7 +655,7 @@ export class Quiz {
   }
   async skip(message: Message | PartialMessage, userId: string) {
     var channel = await getbotchannel(this.guild);
-    if (!channel) return this.stop(this.guild);
+    if (!channel) return this.stop();
     var userchannel = getuserchannel(this.guild.members.cache.get(userId));
     if (channel.id !== userchannel?.id) return message.channel.send({ embeds: [
       client.mkembed({
@@ -697,7 +697,7 @@ export class Quiz {
   }
   async hint(message: Message | PartialMessage, userId: string, admin?: boolean) {
     var channel = await getbotchannel(this.guild);
-    if (!channel) return this.stop(this.guild);
+    if (!channel) return this.stop();
     var userchannel = getuserchannel(this.guild.members.cache.get(userId));
     if (channel.id !== userchannel?.id) return message.channel.send({ embeds: [
       client.mkembed({

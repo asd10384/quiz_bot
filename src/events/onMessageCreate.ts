@@ -31,7 +31,7 @@ export const onMessageCreate = async (message: Message) => {
           qc.setcananser(true);
           if (qc.playquiztype.quiz === "음악퀴즈") return qc.music_anser(message, [], message.author.id);
           // if (qc.playquiztype.quiz === "그림퀴즈") return qc.img_anser(message, [], message.author.id);
-          return qc.stop(message.guild!);
+          return qc.stop();
         }
       } else {
         // 쿨타임

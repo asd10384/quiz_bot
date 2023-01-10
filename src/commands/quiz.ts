@@ -119,7 +119,7 @@ export default class implements Command {
       return qc.start(message, message.author.id);
     }
     if (args[0] === "중지" || args[0] === "종료") {
-      return qc.stop(message.guild!);
+      return qc.stop();
     }
     if (args[0] === "설정") {
       client.msgdelete(message, 10, true);
@@ -131,7 +131,7 @@ export default class implements Command {
       if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] }).then(m => client.msgdelete(m, 1));
       if (qc.playquiztype.quiz === "음악퀴즈") return qc.music_anser(message, ["스킵", "관리자"], message.author.id);
       // if (qc.playquiztype.quiz === "그림퀴즈") return qc.img_anser(message, ["스킵", "관리자"], message.author.id);
-      return qc.stop(message.guild!);
+      return qc.stop();
     }
     if (args[0] === "힌트") {
       client.msgdelete(message, 10, true);
@@ -195,7 +195,7 @@ export default class implements Command {
   async fix(message: Message | CommandInteraction, guildDB: guildData): Promise<string> {
     let channel = message.guild!.channels.cache.get(guildDB.channelId);
     if (channel?.type === ChannelType.GuildText) {
-      client.getqc(message.guild!).stop(message.guild!, true);
+      client.getqc(message.guild!).stop(true);
       await channel.messages.fetch({ cache: true }).then((msg) => {
         try {
           if (msg.size > 0) (channel as TextChannel).bulkDelete(msg.size).catch(() => { if (client.debug) Logger.log('메세지 전체 삭제 오류'); });
