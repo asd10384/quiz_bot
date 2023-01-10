@@ -1,6 +1,6 @@
 import { page, page_data } from "./quizClass";
 
-export function dataswitch(page: string[], data: page): { getlist: string[]; getvalue: page_data | null } {
+export const dataswitch = (page: string[], data: page): { getlist: string[]; getvalue: page_data | null } => {
   let getlist: string[] = [];
   let getvalue: page_data | null = null;
   switch (page.length) {

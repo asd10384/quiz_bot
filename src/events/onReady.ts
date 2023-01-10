@@ -1,25 +1,27 @@
 import "dotenv/config";
-import { client, handler } from "../index";
-import QDB from "../database/Quickdb";
-import { ChannelType, TextChannel } from "discord.js";
-import { QUIZ_RULE } from "../config";
+import { QDB } from "../databases/Quickdb";
+import { client, handler } from "..";
+import { Logger } from "../utils/Logger";
+import { ChannelType } from "discord.js";
+import { QUIZ_RULE } from "../config/config";
 
-/** onReady 핸들러 */
-export default async function onReady() {
+export const onReady = () => {
   if (!client.user) return;
-
   const prefix = client.prefix;
-  let actlist: { text: string, time: number }[] = eval(process.env.ACTIVITY!);
+  let actlist: { text: string, time: number }[] = eval(process.env.ACTIVITY || '[{ "text": `/help`, time: 10 }, { "text": `${prefix}help`, "time": 10 }]');
 
-  console.log('Ready!', client.user.username);
-  console.log('Activity:', JSON.stringify(actlist));
-  console.log('로그확인:', client.debug);
+  Logger.ready(`Ready! ${client.user.username}`);
+  Logger.ready(`prefix: ${prefix}`);
+  Logger.ready(`Activity: ${JSON.stringify(actlist)}`);
+  Logger.ready(`로그확인: ${client.debug}`);
 
-  if (process.env.REFRESH_SLASH_COMMAND_ON_READY === 'true') handler.registCachedCommands(client);
+  if (process.env.REFRESH_SLASH_COMMAND_ON_READY === "true") handler.registCachedCommands(client);
 
   quizfix();
 
+  if (actlist.length < 1) return;
   client.user.setActivity(actlist[0].text);
+  if (actlist.length < 2) return;
   let i = 1;
   let time = actlist[1].time;
   setInterval(() => {
@@ -30,31 +32,30 @@ export default async function onReady() {
 }
 
 function quizfix() {
-  QDB.all().then((val) => {
+  QDB.guild.all().then((val) => {
     val.forEach(async (guildDB) => {
       if (guildDB.id && guildDB.channelId) {
         const channel = client.guilds.cache.get(guildDB.id)?.channels.cache.get(guildDB.channelId);
-        if (channel?.type === ChannelType.GuildText) {
-          await (channel as TextChannel).messages.fetch({ cache: true }).then(async (msgs) => {
+        if (channel?.type == ChannelType.GuildText) {
+          await channel.messages.fetch({ cache: true }).then(async (msgs) => {
             try {
-              if (msgs.size > 0) await (channel as TextChannel).bulkDelete(msgs.size).catch((err) => {
-                if (client.debug) console.log('메세지 전체 삭제 오류');
+              if (msgs.size > 0) await channel.bulkDelete(msgs.size).catch(() => {
+                if (client.debug) Logger.error("메세지 전체 삭제 오류");
               });
             } catch {}
           });
-          const msg = await (channel as TextChannel).send({
+          const msg = await channel.send({
             content: `${QUIZ_RULE(guildDB)}ㅤ`,
             embeds: [
               client.mkembed({
                 title: `**현재 퀴즈가 시작되지 않았습니다**`,
                 description: `**정답설정: ${guildDB.options.anser}**\n**다음문제시간: ${guildDB.options.nexttime}초**`,
                 image: `https://ytms.netlify.app/defult.png`,
-                footer: { text: `${client.prefix}퀴즈 도움말` },
-                color: client.embedcolor
+                footer: { text: `${client.prefix}퀴즈 도움말` }
               })
             ]
           });
-          const score = await (channel as TextChannel).send({
+          const score = await channel.send({
             embeds: [
               client.mkembed({
                 title: `**\` [ 퀴즈 스코어 ] \`**`,
@@ -63,7 +64,7 @@ function quizfix() {
               })
             ]
           });
-          return await QDB.set(guildDB.id, { msgId: msg.id, scoreId: score.id }).then((val) => {
+          return await QDB.guild.set(guildDB.id, { msgId: msg.id, scoreId: score.id }).then((val) => {
             if (val) {
               console.log(`${msg.guild!.name} {\n  fix: 시작 fix 성공\n}`);
               client.getqc(msg.guild!).sendlog(`${msg.guild!.name} {\n  fix: 시작 fix 성공\n}`);
@@ -71,11 +72,11 @@ function quizfix() {
               console.log(`${msg.guild!.name} {\n  fix: 시작 fix 실패\n}`);
               client.getqc(msg.guild!).sendlog(`${msg.guild!.name} {\n  fix: 시작 fix 실패\n}`);
             }
-          }).catch((err) => {
+          }).catch(() => {
             console.log(`${msg.guild!.name} {\n  fix: 시작 fix 실패 ERR\n}`);
           });
         }
       }
-    });
-  });
+    })
+  })
 }

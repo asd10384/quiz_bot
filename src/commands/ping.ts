@@ -1,42 +1,31 @@
 import { client } from "../index";
 import { Command } from "../interfaces/Command";
-import { I, D, B } from "../aliases/discord.js";
-import { Message, ActionRowBuilder, ButtonBuilder, EmbedBuilder, ButtonStyle, ActionRow, MessageActionRowComponent, ActionRowComponent } from "discord.js";
+import { Message, ActionRowBuilder, ButtonBuilder, EmbedBuilder, ButtonStyle, ChatInputApplicationCommandData, ButtonInteraction, CommandInteraction } from "discord.js";
 
-/**
- * DB
- * let guildDB = await MDB.get.guild(interaction);
- * 
- * check permission(role)
- * if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
- */
-
-/** 핑 명령어 */
-export default class PingCommand implements Command {
-  /** 해당 명령어 설명 */
+export default class implements Command {
   name = "ping";
   visible = true;
   description = "PONG!";
   information = "핑 확인";
   aliases: string[] = [ "핑" ];
-  metadata: D = {
+  metadata: ChatInputApplicationCommandData = {
     name: this.name,
     description: this.description
   };
   msgmetadata?: { name: string; des: string; }[] = undefined;
 
   /** 실행되는 부분 */
-  async slashrun(interaction: I) {
-    return await interaction.editReply(this.ping());
+  async slashRun(interaction: CommandInteraction) {
+    return await interaction.followUp(this.ping());
   }
-  async msgrun(message: Message, args: string[]) {
+  async messageRun(message: Message) {
     return message.channel.send(this.ping()).then(m => client.msgdelete(m, 3));
   }
-  async buttonrun(interaction: B, args: string[]) {
-    return await interaction.editReply(this.ping());
+  async buttonRun(interaction: ButtonInteraction) {
+    return await interaction.followUp(this.ping());
   }
 
-  ping(): { embeds: [ EmbedBuilder ], components: [ ActionRowBuilder<ButtonBuilder> ] } {
+  ping(): { embeds: [ EmbedBuilder ], components: [ ActionRowBuilder<ButtonBuilder> ], ephemeral: boolean } {
     const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
         .setCustomId("ping-restart")
@@ -45,9 +34,8 @@ export default class PingCommand implements Command {
     );
     const embed = client.mkembed({
       title: `Pong!`,
-      description: `**${client.ws.ping}ms**`,
-      color: client.embedcolor
+      description: `**${client.ws.ping}ms**`
     });
-    return { embeds: [ embed ], components: [ actionRow ] };
+    return { embeds: [ embed ], components: [ actionRow ], ephemeral: true };
   }
 }

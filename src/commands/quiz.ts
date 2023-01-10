@@ -1,30 +1,31 @@
 import { client } from "../index";
-import { check_permission as ckper, embed_permission as emper } from "../function/permission";
 import { Command } from "../interfaces/Command";
-import { I, D } from "../aliases/discord.js.js";
-import { Message, ActionRowBuilder, ButtonBuilder, EmbedBuilder, ApplicationCommandOptionType, TextChannel, ChannelType } from "discord.js";
-import QDB, { qdbdata } from "../database/Quickdb";
-import { QUIZ_RULE } from "../config";
+// import { Logger } from "../utils/Logger";
+import { Message, EmbedBuilder, ApplicationCommandOptionType, ChatInputApplicationCommandData, CommandInteraction, ChannelType, TextChannel } from "discord.js";
+import { check_permission as ckper, embed_permission as emper } from "../utils/Permission";
+import { guildData, QDB } from "../databases/Quickdb";
+import { QUIZ_RULE } from "../config/config";
 import { getuserchannel } from "../quiz/getChannel";
+import { DiscordGatewayAdapterCreator, joinVoiceChannel } from "@discordjs/voice";
+import { Logger } from "../utils/Logger";
 
 /**
  * DB
- * let guildDB = await MDB.get.guild(interaction.guild!);
+ * const GDB = await QDB.get(interaction.guild!);
  * 
  * check permission(role)
- * if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
+ * if (!(await ckper(interaction))) return await interaction.followUp({ embeds: [ emper ] });
  * if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] }).then(m => client.msgdelete(m, 1));
  */
 
-/** 예시 명령어 */
-export default class ExampleCommand implements Command {
+export default class implements Command {
   /** 해당 명령어 설명 */
   name = "퀴즈";
   visible = true;
   description = "play quiz";
   information = "디스코드에서 퀴즈";
   aliases: string[] = [ "quiz" ];
-  metadata: D = {
+  metadata: ChatInputApplicationCommandData = {
     name: this.name,
     description: this.description,
     options: [
@@ -42,29 +43,60 @@ export default class ExampleCommand implements Command {
         type: ApplicationCommandOptionType.Subcommand,
         name: "도움말",
         description: "퀴즈 도움말"
+      },
+      {
+        type: ApplicationCommandOptionType.Subcommand,
+        name: "join",
+        description: "음성채널 접속",
+        options: [{
+          type: ApplicationCommandOptionType.Channel,
+          name: "channel",
+          description: "채널",
+          channelTypes: [ ChannelType.GuildVoice, ChannelType.GuildStageVoice ],
+          required: true
+        }]
       }
     ]
   };
   msgmetadata?: { name: string; des: string; }[] = undefined;
 
   /** 실행되는 부분 */
-  async slashrun(interaction: I) {
+  async slashRun(interaction: CommandInteraction) {
     const cmd = interaction.options.data[0];
+    if (cmd.name === "join") {
+      const channel = cmd.options ? cmd.options[0]?.channel : undefined;
+      if (!channel) return client.mkembed({
+        title: `채널을 찾을수 없음`,
+        color: "DarkRed"
+      });
+      if (channel.type === ChannelType.GuildVoice || channel.type === ChannelType.GuildStageVoice) {
+        joinVoiceChannel({
+          adapterCreator: interaction.guild!.voiceAdapterCreator! as DiscordGatewayAdapterCreator,
+          channelId: channel.id,
+          guildId: interaction.guildId!
+        });
+      }
+      return client.mkembed({
+        title: `음성채널이 아님`,
+        color: "DarkRed"
+      });
+    }
     if (cmd.name === "채널생성") {
       if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
-      const guildDB = await QDB.get(interaction.guild!);
+      const guildDB = await QDB.guild.get(interaction.guild!);
       return await interaction.editReply({ content: await this.create_channel(interaction, guildDB) });
     }
     if (cmd.name === "fix") {
       if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
-      const guildDB = await QDB.get(interaction.guild!);
+      const guildDB = await QDB.guild.get(interaction.guild!);
       return await interaction.editReply({ content: await this.fix(interaction, guildDB) });
     }
     if (cmd.name === '도움말') {
       return await interaction.editReply({ embeds: [ this.help() ] });
     }
+    return await interaction.followUp({ embeds: [ this.help() ] });
   }
-  async msgrun(message: Message, args: string[]) {
+  async messageRun(message: Message, args: string[]) {
     const qc = client.getqc(message.guild!);
     if (args[0] === "시작") {
       client.msgdelete(message, 10, true);
@@ -107,7 +139,7 @@ export default class ExampleCommand implements Command {
       return qc.hint(message, message.author.id, true);
     }
     if (args[0] === "fix") {
-      const guildDB = await QDB.get(message.guild!);
+      const guildDB = await QDB.guild.get(message.guild!);
       if (!guildDB) return message.channel.send({ embeds: [ client.mkembed({
         title: `데이터베이스 오류`,
         description: "데이터베이스를 찾을수없음",
@@ -116,27 +148,13 @@ export default class ExampleCommand implements Command {
       return this.fix(message, guildDB);
     }
     if (args[0] === "도움말" || args[0] === "help") return message.channel.send({ embeds: [ this.help() ] }).then(m => client.msgdelete(m, 4.5));
-    return;
   }
 
   help(): EmbedBuilder {
-    return client.mkembed({
-      title: `\` 퀴즈 도움말 \``,
-      description: `
-        \` 명령어 \`
-        ${client.prefix}퀴즈 시작 : 퀴즈를 시작합니다.
-        ${client.prefix}퀴즈 중지 : 진행중인 퀴즈를 멈춥니다.
-        ${client.prefix}퀴즈 설정 : 정답형식이나 시간을 설정할수 있습니다.
-        \` 관리자 명령어 \`
-        /퀴즈 기본설정 : 퀴즈를 사용할 채널을 생성합니다.
-        /퀴즈 fix : 퀴즈 채널의 오류를 수정합니다.
-        ${client.prefix}퀴즈 스킵 : 투표없이 스킵합니다.
-        ${client.prefix}퀴즈 힌트 :투표없이 힌트를 받습니다.
-      `
-    });
+    return client.help(this.metadata.name, this.metadata, this.msgmetadata)!;
   }
-  
-  async create_channel(message: Message | I, guildDB: qdbdata): Promise<string> {
+
+  async create_channel(message: Message | CommandInteraction, guildDB: guildData): Promise<string> {
     const channel = await message.guild?.channels.create({
       name: `QUIZ_CHANNEL`,
       // type: ChannelType.GuildText,
@@ -150,8 +168,7 @@ export default class ExampleCommand implements Command {
           title: `**현재 퀴즈가 시작되지 않았습니다**`,
           description: `**정답설정: ${guildDB.options.anser}**\n**다음문제시간: ${guildDB.options.nexttime}초**`,
           image: `https://ytms.netlify.app/defult.png`,
-          footer: { text: `${client.prefix}퀴즈 도움말` },
-          color: client.embedcolor
+          footer: { text: `${client.prefix}퀴즈 도움말` }
         })
       ]
     });
@@ -164,25 +181,23 @@ export default class ExampleCommand implements Command {
         })
       ]
     });
-    return await QDB.set(guildDB.id, {
+    return await QDB.guild.set(guildDB.id, {
       channelId: channel.id,
       scoreId: score.id,
       msgId: msg.id
     }).then(() => {
       return `<#${channel.id}> creation complete!`;
-    }).catch((err) => {
+    }).catch(() => {
       return `오류`;
     });
   }
 
-  async fix(message: Message | I, guildDB: qdbdata): Promise<string> {
+  async fix(message: Message | CommandInteraction, guildDB: guildData): Promise<string> {
     let channel = message.guild!.channels.cache.get(guildDB.channelId);
     if (channel?.type === ChannelType.GuildText) {
       client.getqc(message.guild!).stop(message.guild!, true);
-      await (channel as TextChannel).messages.fetch({ cache: true }).then((msg) => {
-        try {
-          if (msg.size > 0) (channel as TextChannel).bulkDelete(msg.size).catch((err) => { if (client.debug) console.log('메세지 전체 삭제 오류'); });
-        } catch (err) {}
+      await channel.messages.fetch({ cache: true }).then((msg) => {
+        if (msg.size > 0) (channel as TextChannel).bulkDelete(msg.size).catch(() => { if (client.debug) Logger.log('메세지 전체 삭제 오류'); });
       });
     } else {
       channel = await message.guild!.channels.create({
@@ -199,8 +214,7 @@ export default class ExampleCommand implements Command {
             title: `**현재 퀴즈가 시작되지 않았습니다**`,
             description: `**정답설정: ${guildDB.options.anser}**\n**다음문제시간: ${guildDB.options.nexttime}초**`,
             image: `https://ytms.netlify.app/defult.png`,
-            footer: { text: `${client.prefix}퀴즈 도움말` },
-            color: client.embedcolor
+            footer: { text: `${client.prefix}퀴즈 도움말` }
           })
         ]
       });
@@ -213,11 +227,11 @@ export default class ExampleCommand implements Command {
           })
         ]
       });
-      await QDB.set(guildDB.id, {
+      await QDB.guild.set(guildDB.id, {
         channelId: (channel as TextChannel).id,
         scoreId: score.id,
         msgId: msg.id
-      }).catch((err) => {});
+      }).catch(() => {});
     }, 350);
     return `fix 실행 완료.`;
   }

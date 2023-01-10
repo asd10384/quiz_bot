@@ -1,50 +1,41 @@
 import "dotenv/config";
-import { ChatInputApplicationCommandData, Client, ClientEvents, ColorResolvable, Guild, Message, EmbedField, EmbedBuilder, ApplicationCommandOptionType } from 'discord.js';
-import _ from '../consts';
-import Quiz from "../quiz/quizClass";
+import { ApplicationCommandOptionType, ChatInputApplicationCommandData, Client, ClientEvents, ColorResolvable, EmbedBuilder, EmbedField, Guild, Message } from "discord.js";
+import { Consts } from "../config/consts";
+import { Quiz } from "../quiz/quizClass";
+// import { Logger } from "../utils/Logger";
 
-export default class BotClient extends Client {
-  debug: boolean;
-  prefix: string;
-  msgdelete: (m: Message, deletetime: number, customtime?: boolean) => void;
-  sleep: (ms: number) => Promise<void>;
-  deletetime: number;
-  embedcolor: ColorResolvable;
-  quiz: Map<string, Quiz>;
-  cooldowntime: number;
-  /**
-   * 클라이언트 생성
-   * 
-   * 환경변수를 읽고 해당 토큰을 사용해 클라이언트 생성
-   */
+export class BotClient extends Client {
+  public debug: boolean;
+  public prefix: string;
+  public embedColor: ColorResolvable;
+  public quiz: Map<string, Quiz>;
+  public cooldowntime: number;
+  public sleep: (ms: number) => Promise<void>;
+
   public constructor() {
-    super({ intents: _.CLIENT_INTENTS });
+    super({ intents: Consts.CLIENT_INTENTS });
+    
+    this.debug = JSON.parse(process.env.DEBUG || "false");
+    this.prefix = process.env.PREFIX || "t;";
 
-    if (!process.env.DISCORD_TOKEN) {
-      throw new Error('.env 파일에 DISOCRD_TOKEN이 없음.');
-    }
-    this.debug = JSON.parse(process.env.DEBUG!);
-    this.token = process.env.DISCORD_TOKEN!;
-    this.prefix = process.env.PREFIX || 'm;';
-    this.login();
-    this.deletetime = 6000; //초
-    this.msgdelete = (message: Message, time: number, customtime?: boolean) => {
-      let dtime = (customtime) ? time : this.deletetime * time;
-      if (dtime < 100) dtime = 100;
-      setTimeout(() => {
-        try {
-          message.delete().catch((err) => {});
-        } catch(err) {}
-      }, dtime);
-    };
-    this.sleep = (ms: number) => {
-      return new Promise(res => setTimeout(res, ms));
-    }
-    this.embedcolor = process.env.EMBED_COLOR 
+    this.embedColor = process.env.EMBED_COLOR
       ? process.env.EMBED_COLOR.trim().charAt(0).toLocaleUpperCase() + process.env.EMBED_COLOR.trim().slice(1).toLocaleLowerCase() as ColorResolvable
       : "Orange";
+    this.sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
     this.quiz = new Map();
     this.cooldowntime = 1250;
+
+    this.login(process.env.DISCORD_TOKEN);
+  }
+
+  public readonly msgdelete = (message: Message, time: number, customtime?: boolean) => {
+    let deletetime = customtime ? time : 6000 * time;
+    if (deletetime < 100) deletetime = 100;
+    setTimeout(() => {
+      try {
+        if (message.deletable) message.delete();
+      } catch {};
+    }, deletetime);
   }
 
   /**
@@ -56,16 +47,21 @@ export default class BotClient extends Client {
    * 
    * @example
    *    client.onEvent('ready', (client, info) => {
-   *      console.log(client?.user.username, '봇이 준비되었습니다.', info) // 출력: OOO 봇이 준비되었습니다. 추가 정보
+   *      Logger.ready(client?.user.username, '봇이 준비되었습니다.', info) // 출력: OOO 봇이 준비되었습니다. 추가 정보
    *    }, ['추가 정보']);
    * 
    * @param event 이벤트명
    * @param func 이벤트 핸들러 함수
    * @param extra 추가로 전달할 목록
    */
-  public onEvent = (event: keyof ClientEvents, func: Function, ...extra: any[]) => this.on(event, (...args) => func(...args, ...extra));
+  public readonly onEvent = (event: keyof ClientEvents, func: Function, ...extra: any[]) => this.on(event, (...args) => func(...args, ...extra));
 
-  mkembed(data: {
+  public getqc = (guild: Guild): Quiz => {
+    if (!this.quiz.has(guild.id)) this.quiz.set(guild.id, new Quiz(guild));
+    return this.quiz.get(guild.id)!;
+  }
+
+  public mkembed(data: {
     title?: string,
     description?: string,
     url?: string,
@@ -90,12 +86,12 @@ export default class BotClient extends Client {
     if (data.color) {
       embed.setColor(data.color);
     } else {
-      embed.setColor(this.embedcolor);
+      embed.setColor(this.embedColor);
     }
     return embed;
   }
 
-  help(name: string, metadata: ChatInputApplicationCommandData, msgmetadata?: { name: string, des: string }[]): EmbedBuilder | undefined {
+  public help(name: string, metadata: ChatInputApplicationCommandData, msgmetadata?: { name: string, des: string }[]): EmbedBuilder | undefined {
     const prefix = this.prefix;
     var text = "";
     metadata.options?.forEach((opt) => {
@@ -123,12 +119,7 @@ export default class BotClient extends Client {
     return this.mkembed({
       title: `\` ${name} 명령어 \``,
       description: text,
-      color: this.embedcolor
+      color: this.embedColor
     });
-  }
-
-  public getqc = (guild: Guild): Quiz => {
-    if (!this.quiz.has(guild.id)) this.quiz.set(guild.id, new Quiz(guild));
-    return this.quiz.get(guild.id)!;
   }
 }

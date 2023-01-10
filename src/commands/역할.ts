@@ -1,27 +1,26 @@
 import { client } from "../index";
-import { check_permission as ckper, embed_permission as emper } from "../function/permission";
 import { Command } from "../interfaces/Command";
-import { I, D } from "../aliases/discord.js.js";
-import { Message, EmbedBuilder, ApplicationCommandOptionType } from "discord.js";
-import QDB, { qdbdata } from "../database/Quickdb";
+import { Message, EmbedBuilder, ApplicationCommandOptionType, ChatInputApplicationCommandData, CommandInteraction } from "discord.js";
+import { check_permission as ckper, embed_permission as emper } from "../utils/Permission";
+import { QDB, guildData } from "../databases/Quickdb";
 
 /**
  * DB
- * let guildDB = await MDB.get.guild(interaction);
+ * const GDB = await QDB.get(interaction);
  * 
  * check permission(role)
- * if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
+ * if (!(await ckper(interaction))) return await interaction.followUp({ embeds: [ emper ] });
  */
 
 /** 역할 명령어 */
-export default class 역할Command implements Command {
+export default class implements Command {
   /** 해당 명령어 설명 */
   name = "역할";
   visible = true;
   description = "특정 명령어 사용가능한 역할 설정";
   information = "특정 명령어 사용가능한 역할 설정";
   aliases = [ "role" ];
-  metadata: D = {
+  metadata: ChatInputApplicationCommandData = {
     name: this.name,
     description: this.description,
     options: [
@@ -80,38 +79,38 @@ export default class 역할Command implements Command {
   ];
 
   /** 실행되는 부분 */
-  async slashrun(interaction: I) {
-    if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
+  async slashRun(interaction: CommandInteraction) {
+    if (!(await ckper(interaction))) return await interaction.followUp({ embeds: [ emper ] });
     const cmd = interaction.options.data[0];
     const role = cmd.options ? cmd.options[0]?.role : undefined;
-    let guildDB = await QDB.get(interaction.guild!);
-    if (cmd.name === '목록') return await interaction.editReply({ embeds: [ this.list(guildDB) ] });
-    if (cmd.name === '추가') return await interaction.editReply({ embeds: [ await this.add(guildDB, role!.id) ] });
-    if (cmd.name === '제거') return await interaction.editReply({ embeds: [ await this.remove(guildDB, role!.id) ] });
-    if (cmd.name === '도움말') return await interaction.editReply({ embeds: [
+    const GDB = await QDB.guild.get(interaction.guild!);
+    if (cmd.name === '목록') return await interaction.followUp({ embeds: [ this.list(GDB) ] });
+    if (cmd.name === '추가') return await interaction.followUp({ embeds: [ await this.add(GDB, role!.id) ] });
+    if (cmd.name === '제거') return await interaction.followUp({ embeds: [ await this.remove(GDB, role!.id) ] });
+    return await interaction.followUp({ embeds: [
       client.help(this.name, this.metadata, this.msgmetadata)!
     ] });
   }
-  async msgrun(message: Message, args: string[]) {
+  async messageRun(message: Message, args: string[]) {
     if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] });
-    let guildDB = await QDB.get(message.guild!);
-    if (!guildDB) return message.channel.send({ embeds: [ client.mkembed({
+    const GDB = await QDB.guild.get(message.guild!);
+    if (!GDB) return message.channel.send({ embeds: [ client.mkembed({
       title: `데이터베이스오류`,
       description: "다시시도해주세요.",
       color: "DarkRed"
     }) ] }).then(m => client.msgdelete(m, 1));
-    if (args[0] === "목록") return message.channel.send({ embeds: [ this.list(guildDB) ] }).then(m => client.msgdelete(m, 4));
+    if (args[0] === "목록") return message.channel.send({ embeds: [ this.list(GDB) ] }).then(m => client.msgdelete(m, 4));
     if (args[0] === "추가") {
       if (args[1]) {
         const role = message.guild?.roles.cache.get(args[1]);
-        if (role) return message.channel.send({ embeds: [ await this.add(guildDB, role.id) ] }).then(m => client.msgdelete(m, 2));
+        if (role) return message.channel.send({ embeds: [ await this.add(GDB, role.id) ] }).then(m => client.msgdelete(m, 2));
       }
       return message.channel.send({ embeds: [ this.err("추가", "역할을 찾을수 없습니다.") ] }).then(m => client.msgdelete(m, 1));
     }
     if (args[0] === "제거") {
       if (args[1]) {
         const role = message.guild?.roles.cache.get(args[1]);
-        if (role) return message.channel.send({ embeds: [ await this.remove(guildDB, role.id) ] }).then(m => client.msgdelete(m, 2));
+        if (role) return message.channel.send({ embeds: [ await this.remove(GDB, role.id) ] }).then(m => client.msgdelete(m, 2));
       }
       return message.channel.send({ embeds: [ this.err("제거", "역할을 찾을수 없습니다.") ] }).then(m => client.msgdelete(m, 1));
     }
@@ -127,20 +126,19 @@ export default class 역할Command implements Command {
     })
   }
 
-  list(guildDB: qdbdata): EmbedBuilder {
+  list(GDB: guildData): EmbedBuilder {
     let text: string = '';
-    guildDB.role.forEach((roleID) => {
+    GDB.role.forEach((roleID) => {
       text += `<@&${roleID}>\n`;
     });
     return client.mkembed({
       title: `\` 역할 목록 \``,
-      description: (text && text !== '') ? text : '등록된 역할 없음',
-      color: client.embedcolor
+      description: (text && text !== '') ? text : '등록된 역할 없음'
     });
   }
 
-  async add(guildDB: qdbdata, roleId: string): Promise<EmbedBuilder> {
-    if (guildDB.role.includes(roleId)) {
+  async add(GDB: guildData, roleId: string): Promise<EmbedBuilder> {
+    if (GDB.role.includes(roleId)) {
       return client.mkembed({
         title: `\` 역할 추가 오류 \``,
         description: `<@&${roleId}> 역할이 이미 등록되어 있습니다.`,
@@ -148,8 +146,8 @@ export default class 역할Command implements Command {
         color: 'DarkRed'
       });
     } else {
-      guildDB.role.push(roleId);
-      return await QDB.set(guildDB.id, { role: guildDB.role }).then((val) => {
+      GDB.role.push(roleId);
+      return await QDB.guild.set(GDB.id, { role: GDB.role }).then((val) => {
         if (!val) return client.mkembed({
           title: `\` 역할 추가 오류 \``,
           description: `<@&${roleId}> 역할 추가 중 오류발생`,
@@ -160,7 +158,7 @@ export default class 역할Command implements Command {
           description: `<@&${roleId}> 역할 추가 완료`,
           footer: { text: `목록: /역할 목록` }
         });
-      }).catch((err) => {
+      }).catch(() => {
         return client.mkembed({
           title: `\` 역할 추가 오류 \``,
           description: `<@&${roleId}> 역할 추가 중 오류발생`,
@@ -170,14 +168,14 @@ export default class 역할Command implements Command {
     }
   }
 
-  async remove(guildDB: qdbdata, roleId: string): Promise<EmbedBuilder> {
-    if (guildDB.role.includes(roleId)) {
+  async remove(GDB: guildData, roleId: string): Promise<EmbedBuilder> {
+    if (GDB.role.includes(roleId)) {
       let list: string[] = [];
-      guildDB!.role.forEach((ID) => {
+      GDB!.role.forEach((ID) => {
         if (ID !== roleId) list.push(ID);
       });
-      guildDB.role = list;
-      return await QDB.set(guildDB.id, { role: guildDB.role }).then((val) => {
+      GDB.role = list;
+      return await QDB.guild.set(GDB.id, { role: GDB.role }).then((val) => {
         if (!val) return client.mkembed({
           title: `\` 역할 제거 오류 \``,
           description: `<@&${roleId}> 역할 제거 중 오류발생`,
@@ -188,7 +186,7 @@ export default class 역할Command implements Command {
           description: `<@&${roleId}> 역할 제거 완료`,
           footer: { text: `목록: /역할 목록` }
         });
-      }).catch((err) => {
+      }).catch(() => {
         return client.mkembed({
           title: `\` 역할 제거 오류 \``,
           description: `<@&${roleId}> 역할 제거 중 오류발생`,

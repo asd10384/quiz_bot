@@ -1,28 +1,8 @@
-
-# 파일 이름으로 제외
-# 파일명.파일확장자
-# 
-# 폴더 이름으로 폴더제외
-# 폴더명/
-# 
-# 동일이름인 파일 제외
-# 파일명.*
-# 
-# 동일 확장자인 파일 제외
-# *.파일확장자
-
 node_modules/
-
-package-lock.json
-
-json.sqlite
-
-.env
-
 dist/
-
-googlettsapi.json
-
-sounds/
-
+package-lock.json
 test*.ts
+.env
+test_file/
+*.sqlite
+music/

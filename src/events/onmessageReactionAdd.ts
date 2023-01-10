@@ -1,20 +1,28 @@
-import { client } from '../index';
-import { MessageReaction, PartialMessageReaction, PartialUser, User } from 'discord.js';
-import QDB from "../database/Quickdb";
+import { QDB } from "../databases/Quickdb";
+import { MessageReaction, PartialMessageReaction, PartialUser, User } from "discord.js";
+import { client } from "..";
 
-export default async function onmessageReactionAdd (reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) {
+const smallnum = (s: string): number => {
+  return s === "1️⃣" ? 1
+    : s === "2️⃣" ? 2
+    : s === "3️⃣" ? 3
+    : s === "4️⃣" ? 4
+    : 5
+}
+
+export const onmessageReactionAdd = async (reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser): Promise<any> => {
   if (user.bot) return;
   if (!reaction.message.guildId) return;
-
-  const guildDB = await QDB.get(reaction.message.guild!);
-  const qc = client.getqc(reaction.message.guild!);
 
   if (reaction.message.partial) await reaction.message.fetch();
   if (reaction.partial) await reaction.fetch();
 
+  const GDB = await QDB.guild.get(reaction.message.guild!);
+  const qc = client.getqc(reaction.message.guild!);
+
   const name = reaction.emoji.name;
-  if (!name) return;
-  if (reaction.message.channelId === guildDB.channelId) {
+
+  if (reaction.message.channelId === GDB.channelId) {
     if (qc.playing) {
       if (name === "⏭️") {
         qc.skip(reaction.message, user.id);
@@ -45,7 +53,7 @@ export default async function onmessageReactionAdd (reaction: MessageReaction | 
       return reaction.users.remove(user.id);
     }
     qc.setcooldown(Date.now());
-    if (["⬅️", "➡️"].includes(name)) {
+    if (name && ["⬅️", "➡️"].includes(name)) {
       let getnowpage = (name === "⬅️") ? qc.page.nowpage - 1 : qc.page.nowpage + 1;
       if (getnowpage < 0) {
         qc.setpage({ nowpage: 0 });
@@ -55,7 +63,7 @@ export default async function onmessageReactionAdd (reaction: MessageReaction | 
         qc.setpage({ nowpage: getnowpage });
       }
       qc.start(reaction.message, user.id);
-    } else if (["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"].includes(name)) {
+    } else if (name && ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"].includes(name)) {
       var number = smallnum(name);
       let pp = 0;
       if (qc.page.end) {
@@ -85,12 +93,4 @@ export default async function onmessageReactionAdd (reaction: MessageReaction | 
     }
     reaction.users.remove(user.id);
   }
-}
-
-function smallnum(s: string): number {
-  return s === "1️⃣" ? 1
-    : s === "2️⃣" ? 2
-    : s === "3️⃣" ? 3
-    : s === "4️⃣" ? 4
-    : 5
 }

@@ -1,18 +1,18 @@
 import "dotenv/config";
 import { client } from "../index";
-import { I, M, PM } from "aliases/discord.js";
-import { Guild, EmbedBuilder, StageChannel, TextChannel, VoiceChannel, ChannelType } from "discord.js";
-import QDB, { qdbdata } from "../database/Quickdb";
+import { Guild, EmbedBuilder, StageChannel, TextChannel, VoiceChannel, ChannelType, Message, PartialMessage } from "discord.js";
+import { QDB, guildData } from "../databases/Quickdb";
 import request from "request";
 import { CheerioAPI, load } from "cheerio";
 import { fshuffle } from "./shuffle";
-import { QUIZ_RULE } from "../config";
+import { QUIZ_RULE } from "../config/config";
 import { AudioPlayer, AudioPlayerStatus, createAudioPlayer, createAudioResource, DiscordGatewayAdapterCreator, entersState, getVoiceConnection, joinVoiceChannel, StreamType, VoiceConnectionStatus } from "@discordjs/voice";
 import { getuserchannel, getbotchannel } from "./getChannel";
 import ytdl from "ytdl-core";
 import internal from "stream";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { dataswitch } from "./page";
+import { Logger } from "../utils/Logger";
 const sleep = (t: number) => new Promise(r => setTimeout(r, t));
 
 const proxy = process.env.PROXY;
@@ -74,7 +74,7 @@ interface quizpagecheck {
   nownummax?: [ number, number ];
 };
 
-export default class Quiz {
+export class Quiz {
   cooldown: number;
   guild: Guild;
   playing: boolean;
@@ -166,22 +166,22 @@ export default class Quiz {
   }
 
   async bulkmessage(guild: Guild) {
-    const guildDB = await QDB.get(guild);
+    const guildDB = await QDB.guild.get(guild);
     const channel = guild.channels.cache.get(guildDB.channelId);
     if (!channel || channel.type !== ChannelType.GuildText) return;
     try {
-      await (channel as TextChannel).messages.fetch({ after: guildDB.scoreId, cache: true }).then(async (ms) => {
+      await channel.messages.fetch({ after: guildDB.scoreId, cache: true }).then(async (ms) => {
         if (ms.size > 0) await (channel as TextChannel).bulkDelete(ms.size).catch(() => {});
       });
     } catch {};
   }
   
   async stop(guild: Guild, no?: boolean) {
-    const guildDB = await QDB.get(guild);
+    const guildDB = await QDB.guild.get(guild);
     if (!no) await this.bulkmessage(guild);
     const channel = guild.channels.cache.get(guildDB.channelId);
     if (channel?.type === ChannelType.GuildText) {
-      const msg = (channel as TextChannel).messages.cache.get(guildDB.msgId);
+      const msg = channel.messages.cache.get(guildDB.msgId);
       msg?.reactions.removeAll();
     }
     this.playing = false;
@@ -211,18 +211,18 @@ export default class Quiz {
 
   setmsg(guild: Guild, anser_user?: string, time?: number) {
     setTimeout(() => {
-      QDB.get(guild).then((guildDB) => {
+      QDB.guild.get(guild).then((guildDB) => {
         if (guildDB) {
           let text = `${this.setlist(guildDB)}`;
           let embed = this.setembed(guildDB, anser_user, time);
           const channel = guild.channels.cache.get(guildDB.channelId);
-          if (channel && channel.type === ChannelType.GuildText) (channel as TextChannel).messages.cache.get(guildDB.msgId)?.edit({ content: text, embeds: [embed] }).catch((err) => {});
+          if (channel && channel.type === ChannelType.GuildText) channel.messages.cache.get(guildDB.msgId)?.edit({ content: text, embeds: [embed] }).catch(() => {});
         }
-      }).catch((err) => {});
+      }).catch(() => {});
     }, 50);
   }
 
-  setlist(guildDB: qdbdata): string {
+  setlist(guildDB: guildData): string {
     if (this.playing) {
       return `퀴즈를 종료하시려면 \` ${client.prefix}퀴즈 종료 \`를 입력해주세요.
   퀴즈가 진행되지 않거나 오류가 발생했을때 \` ${client.prefix}퀴즈 fix \`를 입력해주세요.
@@ -233,7 +233,7 @@ export default class Quiz {
     }
   }
 
-  setembed(guildDB: qdbdata, anser_user?: string, time?: number): EmbedBuilder {
+  setembed(guildDB: guildData, anser_user?: string, time?: number): EmbedBuilder {
     let data = this.nowplaying!;
     let embed = client.mkembed({
       footer: { text: `${client.prefix}퀴즈 도움말` }
@@ -268,7 +268,7 @@ export default class Quiz {
 
   async getsite(): Promise<page> {
     return new Promise((res, rej) => {
-      request.get(`${MUSIC_SITE}/music_list.js`, (err, res2, body) => {
+      request.get(`${MUSIC_SITE}/music_list.js`, (err, _res2, body) => {
         if (err || !body) return rej(err);
         const data: page = eval(body)[0];
         return res(data);
@@ -277,31 +277,31 @@ export default class Quiz {
   }
   async setquiz_getsite(url: string): Promise<CheerioAPI> {
     return new Promise((res, rej) => {
-      request.get(encodeURI(url.toLowerCase()), (err, res2, html) => {
+      request.get(encodeURI(url.toLowerCase()), (err, _res2, html) => {
         if (err || !html) return rej(err);
         return res(load(html));
       });
     });
   }
 
-  async start(message: M | PM, userId: string) {
+  async start(message: Message | PartialMessage, userId: string) {
     if (MUSIC_SITE.length === 0) return message.channel.send({ embeds: [ client.mkembed({
       title: `사이트를찾을수없음`,
       color: "DarkRed"
     }) ] }).then(m => client.msgdelete(m, 2));
-    const guildDB = await QDB.get(message.guild!);
+    const guildDB = await QDB.guild.get(this.guild);
     const channel = client.channels.cache.get(guildDB.channelId);
     if (!channel || channel.type !== ChannelType.GuildText) return message.channel.send({ embeds: [ client.mkembed({
       title: `퀴즈 채널을 찾을수 없습니다.`,
       color: "DarkRed"
     }) ] }).then(m => client.msgdelete(m, 2));
-    const msg = (channel as TextChannel).messages.cache.get(guildDB.msgId);
+    const msg = channel.messages.cache.get(guildDB.msgId);
     if (!msg) return message.channel.send({ embeds: [ client.mkembed({
       title: `퀴즈 채널에 임베드를 찾을수 없습니다.`,
       color: "DarkRed"
     }) ] }).then(m => client.msgdelete(m, 2));
     const data: page | undefined = await this.getsite().catch((err) => {
-      if (client.debug) console.log(err);
+      if (client.debug) Logger.log(err);
       return undefined;
     });
     if (!data) return message.channel.send({ embeds: [ client.mkembed({
@@ -370,13 +370,13 @@ export default class Quiz {
     });
   }
   
-  async setquiz(message: M | PM, getvalue: page_data, userId: string) {
+  async setquiz(message: Message | PartialMessage, getvalue: page_data, userId: string) {
     const $ = await this.setquiz_getsite(getvalue.url).catch((err) => {
-      if (client.debug) console.log(err);
+      if (client.debug) Logger.log(err);
       return undefined;
     });
     if (!$) {
-      this.stop(message.guild!);
+      this.stop(this.guild);
       await sleep(100);
       return message.channel.send({ embeds: [ client.mkembed({
         title: `오류발생`,
@@ -385,7 +385,7 @@ export default class Quiz {
       }) ] }).then(m => client.msgdelete(m, 1));
     }
     let first: gethtmlsite[] = [];
-    $("body div.music div").each((i, el) => {
+    $("body div.music div").each((_i, el) => {
       first.push({
         name: ($(el).children("a.name").text().trim()),
         vocal: ($(el).children("a.vocal").text().trim()),
@@ -398,7 +398,7 @@ export default class Quiz {
     count = Array.from(Array(first.length).keys());
     for (let i=0; i<3; i++) count = fshuffle(count);
     const maxcount = 100;
-    let logtext = `${message.guild?.name} {\n`;
+    let logtext = `${this.guild.name} {\n`;
     for (let i=0; i<maxcount; i++) {
       if (!first[count[i]]?.name) continue;
       second.push({
@@ -410,13 +410,13 @@ export default class Quiz {
       logtext += `  ${i+1}. [${count[i]}] ${first[count[i]].vocal} - ${first[count[i]].name}\n`;
     }
     logtext += `}\n`;
-    if (client.debug) console.log(logtext);
+    if (client.debug) Logger.log(logtext);
     if (LOGCHANNEL) this.sendlog(logtext);
     this.queue = second;
     this.count = [ 1, second.length ];
     if (this.playquiztype.quiz === "음악퀴즈") return this.music_quiz(message, userId);
     // if (this.playquiztype.quiz === "그림퀴즈") return this.img_quiz(message, userId);
-    this.stop(message.guild!);
+    this.stop(this.guild);
     await sleep(100);
     return message.channel.send({ embeds: [ client.mkembed({
       title: `퀴즈오류`,
@@ -425,15 +425,15 @@ export default class Quiz {
     }) ] }).then(m => client.msgdelete(m, 1));
   }
   
-  async music_quiz(message: M | PM, userId: string) {
+  async music_quiz(message: Message | PartialMessage, userId: string) {
     this.cananser = true;
     this.nextplaycanstop = true;
     this.lastPlayer?.stop();
     this.lastPlayer = undefined;
     var voicechannel: VoiceChannel | StageChannel | null | undefined = undefined;
-    var connection = getVoiceConnection(message.guildId!);
-    if (!connection) voicechannel = await getbotchannel(message.guild!);
-    if (!connection && !voicechannel) voicechannel = getuserchannel(message.guild?.members.cache.get(userId));
+    var connection = getVoiceConnection(this.guild.id);
+    if (!connection) voicechannel = await getbotchannel(this.guild);
+    if (!connection && !voicechannel) voicechannel = getuserchannel(this.guild.members.cache.get(userId));
     if (!connection && !voicechannel) return message.channel.send({ embeds: [
       client.mkembed({
         title: `\` 음성 오류 \``,
@@ -441,9 +441,9 @@ export default class Quiz {
         color: "DarkRed"
       })
     ] }).then(m => client.msgdelete(m, 1));
-    if (this.count[0] > this.count[1]) return this.stop(message.guild!);
+    if (this.count[0] > this.count[1]) return this.stop(this.guild);
     const data = this.queue.shift();
-    if (!data) return this.stop(message.guild!);
+    if (!data) return this.stop(this.guild);
     this.nowplaying = data;
     this.playing = true;
     this.anserdata[0] = "";
@@ -451,35 +451,35 @@ export default class Quiz {
       ? `${process.env.MUSIC_SITE}/customimg/${this.page.page.slice(0,-1).join("/")}/${this.nowplaying?.name}.png`
       || `${process.env.MUSIC_SITE}/customimg/${this.page.page.slice(0,-1).join("/")}/${this.nowplaying?.name}.png`
       : `https://img.youtube.com/vi/${this.nowplaying?.link.replace("https://youtu.be/","")}/sddefault.jpg`;
-    await this.bulkmessage(message.guild!);
-    this.setmsg(message.guild!);
-    this.checkmsg(message.guild!);
+    await this.bulkmessage(this.guild);
+    this.setmsg(this.guild);
+    this.checkmsg(this.guild);
     if (!connection) connection = joinVoiceChannel({
-      adapterCreator: message.guild!.voiceAdapterCreator! as DiscordGatewayAdapterCreator,
+      adapterCreator: this.guild.voiceAdapterCreator! as DiscordGatewayAdapterCreator,
       channelId: voicechannel!.id,
-      guildId: message.guildId!
+      guildId: this.guild.id
     });
     const Player = createAudioPlayer();
     connection.setMaxListeners(0);
     Player.setMaxListeners(0);
     Player.on("error", (err) => {
-      if (client.debug) console.log("Player 오류:", err);
+      if (client.debug) Logger.log("Player 오류: " + err);
       Player.stop();
       if (this.playquiztype.quiz === "음악퀴즈") return this.music_anser(message, ["스킵", "오류"], userId);
       // if (this.playquiztype.quiz === "그림퀴즈") return this.img_anser(message, ["스킵", "오류"], userId);
-      return this.stop(message.guild!);
+      return this.stop(this.guild);
     });
     connection.on("error", (err) => {
-      if (client.debug) console.log("connection 오류:", err);
+      if (client.debug) Logger.log("connection 오류: " + err);
       Player.stop();
       if (this.playquiztype.quiz === "음악퀴즈") return this.music_anser(message, ["스킵", "오류"], userId);
       // if (this.playquiztype.quiz === "그림퀴즈") return this.img_anser(message, ["스킵", "오류"], userId);
-      return this.stop(message.guild!);
+      return this.stop(this.guild);
     });
     var checkvideo = await ytdl.getInfo(this.nowplaying.link, {
       lang: "KR",
       requestOptions: { agent }
-    }).catch((err) => {
+    }).catch(() => {
       checkvideo = undefined;
       return undefined;
     });
@@ -487,12 +487,12 @@ export default class Quiz {
       Player.stop();
       if (this.playquiztype.quiz === "음악퀴즈") return this.music_anser(message, ["스킵", "오류"], userId);
       // if (this.playquiztype.quiz === "그림퀴즈") return this.img_anser(message, ["스킵", "오류"], userId);
-      return this.stop(message.guild!);
+      return this.stop(this.guild);
     }
     var ytsource: internal.Readable | undefined = undefined;
     try {
-      if (client.debug) console.log(`${message.guild?.name} {\n  get: ${this.page.page.slice(0,-1).join("/")}\n  number: ${this.count[0]}\n  realnumber: ${this.nowplaying.realnumber+1}\n  name: ${this.nowplaying.vocal}-${this.nowplaying.name}\n  link: ${this.nowplaying.link}\n}`);
-      if (LOGCHANNEL) this.sendlog(`${message.guild?.name} {\n  get: ${this.page.page.slice(0,-1).join("/")}\n  number: ${this.count[0]}\n  realnumber: ${this.nowplaying.realnumber+1}\n  name: ${this.nowplaying.vocal}-${this.nowplaying.name}\n  link: ${this.nowplaying.link}\n}`);
+      if (client.debug) Logger.log(`${this.guild.name} {\n  get: ${this.page.page.slice(0,-1).join("/")}\n  number: ${this.count[0]}\n  realnumber: ${this.nowplaying.realnumber+1}\n  name: ${this.nowplaying.vocal}-${this.nowplaying.name}\n  link: ${this.nowplaying.link}\n}`);
+      if (LOGCHANNEL) this.sendlog(`${this.guild.name} {\n  get: ${this.page.page.slice(0,-1).join("/")}\n  number: ${this.count[0]}\n  realnumber: ${this.nowplaying.realnumber+1}\n  name: ${this.nowplaying.vocal}-${this.nowplaying.name}\n  link: ${this.nowplaying.link}\n}`);
       ytsource = ytdl(this.nowplaying.link, {
         filter: "audioonly",
         quality: "highestaudio",
@@ -500,7 +500,7 @@ export default class Quiz {
         requestOptions: { agent }
       });
       ytsource.on("error", (err) => {
-        if (client.debug) console.log('ytdl-core오류1:', err);
+        if (client.debug) Logger.log('ytdl-core오류1: ' + err);
         ytsource = undefined;
         return undefined;
       });
@@ -511,10 +511,10 @@ export default class Quiz {
       Player.stop();
       if (this.playquiztype.quiz === "음악퀴즈") return this.music_anser(message, ["스킵", "오류"], userId);
       // if (this.playquiztype.quiz === "그림퀴즈") return this.img_anser(message, ["스킵", "오류"], userId);
-      return this.stop(message.guild!);
+      return this.stop(this.guild);
     }
     this.cananser = false;
-    await entersState(connection, VoiceConnectionStatus.Ready, 30_000).catch((err) => {});
+    await entersState(connection, VoiceConnectionStatus.Ready, 30_000).catch(() => {});
     this.nextplaycanstop = false;
     const resource = createAudioResource(ytsource, {
       inlineVolume: true, inputType: StreamType.Arbitrary
@@ -525,24 +525,25 @@ export default class Quiz {
     const subscription = connection.subscribe(Player);
     this.reset_skip(true);
     this.reset_hint(true);
-    Player.on(AudioPlayerStatus.Idle, async (p) => {
+    Player.on(AudioPlayerStatus.Idle, async (_p) => {
       if (ytsource && !this.nextplaycanstop) {
         Player.stop();
         if (this.playquiztype.quiz === "음악퀴즈") this.music_anser(message, ["스킵", "시간초과"], userId);
         // else if (this.playquiztype.quiz === "그림퀴즈") this.img_anser(message, ["스킵", "시간초과"], userId);
-        else this.stop(message.guild!);
+        else this.stop(this.guild);
       }
     });
     connection.on(VoiceConnectionStatus.Disconnected, () => {
-      this.stop(message.guild!);
+      this.stop(this.guild);
       connection?.disconnect();
     });
+    return subscription;
   }
 
-  async music_anser(message: M | PM, args: string[], userId: string) {
+  async music_anser(message: Message | PartialMessage, args: string[], userId: string) {
     this.reset_skip(false);
     this.reset_hint(false);
-    const guildDB = await QDB.get(message.guild!);
+    const guildDB = await QDB.guild.get(this.guild);
     var anser_user = `<@${userId}>`;
     if (args[0] === "스킵" || args[0] === "skip") {
       anser_user = (args[1] === '시간초과') 
@@ -564,44 +565,44 @@ export default class Quiz {
         count: this.scoredata[this.scoredata.findIndex(v => v.Id === message.author!.id)].count += 1
       };
     }
-    this.score(message.guild!);
+    this.score(this.guild);
     this.count[0] = this.count[0] + 1;
     this.anserdata[0] = userId;
     const time = guildDB.options.nexttime;
-    this.setmsg(message.guild!, anser_user, time);
-    await this.bulkmessage(message.guild!);
+    this.setmsg(this.guild, anser_user, time);
+    await this.bulkmessage(this.guild);
     setTimeout(() => {
-      const vc = getVoiceConnection(message.guildId!);
+      const vc = getVoiceConnection(this.guild.id);
       if (vc && this.playing && this.queue.length > 0) {
         try {
           this.music_quiz(message, userId);
         } catch {
-          this.stop(message.guild!);
+          this.stop(this.guild);
         }
       } else {
-        this.stop(message.guild!);
+        this.stop(this.guild);
       }
     }, time * 1000);
   }
 
   checkmsg(guild: Guild) {
-    QDB.get(guild).then((guildDB) => {
+    QDB.guild.get(guild).then((guildDB) => {
       if (guildDB) {
         const channel = guild.channels.cache.get(guildDB.channelId);
         if (channel?.type === ChannelType.GuildText) {
-          if (!(channel as TextChannel).messages.cache.get(guildDB.msgId) || !(channel as TextChannel).messages.cache.get(guildDB.scoreId)) {
-            (channel as TextChannel).messages.fetch({ cache: true }).then(async (ms) => {
-              if (ms.size > 0) await (channel as TextChannel).bulkDelete(ms.size).catch(() => {});
-              const msg = await (channel as TextChannel).send({ content: "퀴즈오류해결중..." });
-              const score = await (channel as TextChannel).send({ content: "스코어보드오류해결중..." });
+          if (!channel.messages.cache.get(guildDB.msgId) || !channel.messages.cache.get(guildDB.scoreId)) {
+            channel.messages.fetch({ cache: true }).then(async (ms) => {
+              if (ms.size > 0) await channel.bulkDelete(ms.size).catch(() => {});
+              const msg = await channel.send({ content: "퀴즈오류해결중..." });
+              const score = await channel.send({ content: "스코어보드오류해결중..." });
               client.getqc(guild).sendlog(`${guild.name} {\n  err: 퀴즈오류 + 스코어보드오류 해결중\n}`);
-              QDB.set(guild.id, { msgId: msg.id, scoreId: score.id }).then(() => {
+              QDB.guild.set(guild.id, { msgId: msg.id, scoreId: score.id }).then(() => {
                 setTimeout(() => {
                   this.setmsg(guild);
                   this.score(guild);
                 }, 600);
-              }).catch((err) => {});
-            }).catch((err) => {});
+              }).catch(() => {});
+            }).catch(() => {});
             return;
           }
         }
@@ -611,16 +612,16 @@ export default class Quiz {
 
   score(guild: Guild) {
     setTimeout(() => {
-      QDB.get(guild).then((guildDB) => {
+      QDB.guild.get(guild).then((guildDB) => {
         if (guildDB) {
           const embed = this.setscoreembed();
           const channel = guild.channels.cache.get(guildDB.channelId);
           if (channel?.type === ChannelType.GuildText) {
-            const scoremsg = (channel as TextChannel).messages.cache.get(guildDB.scoreId);
+            const scoremsg = channel.messages.cache.get(guildDB.scoreId);
             if (scoremsg) scoremsg.edit({ content: "", embeds: [ embed ] });
           }
         }
-      }).catch((err) => {});
+      }).catch(() => {});
     }, 50);
   }
   setscoreembed(): EmbedBuilder {
@@ -648,10 +649,10 @@ export default class Quiz {
     this.skipdata.list = [];
     this.skipdata.can = getcanskip;
   }
-  async skip(message: M | PM, userId: string) {
-    var channel = await getbotchannel(message.guild!);
-    if (!channel) return this.stop(message.guild!);
-    var userchannel = getuserchannel(message.guild?.members.cache.get(userId));
+  async skip(message: Message | PartialMessage, userId: string) {
+    var channel = await getbotchannel(this.guild);
+    if (!channel) return this.stop(this.guild);
+    var userchannel = getuserchannel(this.guild.members.cache.get(userId));
     if (channel.id !== userchannel?.id) return message.channel.send({ embeds: [
       client.mkembed({
         title: `**음성채널 오류**`,
@@ -690,10 +691,10 @@ export default class Quiz {
     this.hintdata.list = [];
     this.hintdata.can = getcanhint;
   }
-  async hint(message: M | PM, userId: string, admin?: boolean) {
-    var channel = await getbotchannel(message.guild!);
-    if (!channel) return this.stop(message.guild!);
-    var userchannel = getuserchannel(message.guild?.members.cache.get(userId));
+  async hint(message: Message | PartialMessage, userId: string, admin?: boolean) {
+    var channel = await getbotchannel(this.guild);
+    if (!channel) return this.stop(this.guild);
+    var userchannel = getuserchannel(this.guild.members.cache.get(userId));
     if (channel.id !== userchannel?.id) return message.channel.send({ embeds: [
       client.mkembed({
         title: `**음성채널 오류**`,
@@ -771,7 +772,7 @@ export default class Quiz {
       const channel = client.guilds.cache.get(LOGCHANNEL[0])?.channels.cache.get(LOGCHANNEL[1]);
       if (channel?.type === ChannelType.GuildText) {
         for (let t of list) {
-          (channel as TextChannel).send({ content: t }).catch((err) => {});
+          channel.send({ content: t }).catch(() => {});
         }
       }
     }

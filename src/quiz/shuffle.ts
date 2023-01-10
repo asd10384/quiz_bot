@@ -1,13 +1,13 @@
 import { client } from "../index";
 import { Guild } from "discord.js";
 
-export async function shuffle(guild: Guild) {
+export const shuffle = (guild: Guild) => {
   const qc = client.getqc(guild);
   qc.setqueue(fshuffle(qc.queue));
   qc.setmsg(guild);
 }
 
-export function fshuffle(list: any[]) {
+export const fshuffle = (list: any[]) => {
   var j, x, i;
   for (i=list.length; i; i-=1) {
     j = Math.floor(Math.random() * i);
