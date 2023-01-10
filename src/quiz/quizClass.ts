@@ -20,7 +20,7 @@ let agent: HttpsProxyAgent | undefined = undefined;
 if (proxy) {
   agent = new HttpsProxyAgent(proxy);
 } else {
-  console.error("proxy를 찾을수 없음");
+  Logger.error("proxy를 찾을수 없음");
 }
 
 export const MUSIC_SITE = process.env.MUSIC_SITE ? process.env.MUSIC_SITE.trim().endsWith("/") ? process.env.MUSIC_SITE.trim().slice(0,-1) : process.env.MUSIC_SITE.trim() : "";
@@ -156,13 +156,13 @@ export class Quiz {
   }
 
   setpage(opt: quizpagecheck) {
-    if (opt.start) this.page.start = opt.start;
-    if (opt.end) this.page.end = opt.end;
-    if (opt.nownummax) this.page.nownummax = opt.nownummax;
-    if (opt.list) this.page.list = opt.list;
-    if (opt.nowpage) this.page.nowpage = opt.nowpage;
-    if (opt.page) this.page.page = opt.page;
-    if (opt.go) this.page.go = opt.go;
+    if (opt.start != undefined) this.page.start = opt.start;
+    if (opt.end != undefined) this.page.end = opt.end;
+    if (opt.nownummax != undefined) this.page.nownummax = opt.nownummax;
+    if (opt.list != undefined) this.page.list = opt.list;
+    if (opt.nowpage != undefined) this.page.nowpage = opt.nowpage;
+    if (opt.page != undefined) this.page.page = opt.page;
+    if (opt.go != undefined) this.page.go = opt.go;
   }
 
   async bulkmessage(guild: Guild) {
@@ -310,24 +310,26 @@ export class Quiz {
     }) ] }).then(m => client.msgdelete(m, 2));
     if (this.page.start.length === 0) {
       this.page.start = userId;
-      msg.reactions.removeAll();
-      msg.react('⬅️');
-      msg.react('1️⃣');
-      msg.react('2️⃣');
-      msg.react('3️⃣');
-      msg.react('4️⃣');
-      msg.react('5️⃣');
-      msg.react('↩️');
-      msg.react('➡️');
+      msg.reactions.removeAll().then(() => {
+        msg.react('⬅️');
+        msg.react('1️⃣');
+        msg.react('2️⃣');
+        msg.react('3️⃣');
+        msg.react('4️⃣');
+        msg.react('5️⃣');
+        msg.react('↩️');
+        msg.react('➡️');
+      });
     }
 
     if (this.page.end) {
       if (this.page.go) {
         let getvalue = data[this.page.page[0]][this.page.page[1]][this.page.page[2]];
         this.playquiztype = getvalue;
-        msg?.reactions.removeAll();
-        msg?.react("💡");
-        msg?.react("⏭️");
+        msg?.reactions.removeAll().then(() => {
+          msg?.react("💡");
+          msg?.react("⏭️");
+        });
         return this.setquiz(message, getvalue, userId);
       } else {
         this.page.end = false;

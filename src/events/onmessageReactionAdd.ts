@@ -21,6 +21,7 @@ export const onmessageReactionAdd = async (reaction: MessageReaction | PartialMe
   const qc = client.getqc(reaction.message.guild!);
 
   const name = reaction.emoji.name;
+  if (!name) return;
 
   if (reaction.message.channelId === GDB.channelId) {
     if (qc.playing) {
@@ -53,8 +54,9 @@ export const onmessageReactionAdd = async (reaction: MessageReaction | PartialMe
       return reaction.users.remove(user.id);
     }
     qc.setcooldown(Date.now());
-    if (name && ["⬅️", "➡️"].includes(name)) {
-      let getnowpage = (name === "⬅️") ? qc.page.nowpage - 1 : qc.page.nowpage + 1;
+    if (["⬅️", "➡️"].includes(name)) {
+      let getnowpage = qc.page.nowpage;
+      getnowpage = (name === "⬅️") ? getnowpage - 1 : getnowpage + 1;
       if (getnowpage < 0) {
         qc.setpage({ nowpage: 0 });
       } else if (getnowpage > qc.page.nownummax[1]) {
@@ -63,9 +65,9 @@ export const onmessageReactionAdd = async (reaction: MessageReaction | PartialMe
         qc.setpage({ nowpage: getnowpage });
       }
       qc.start(reaction.message, user.id);
-    } else if (name && ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"].includes(name)) {
+    } else if (["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"].includes(name)) {
       var number = smallnum(name);
-      let pp = 0;
+      let pp = qc.page.nowpage;
       if (qc.page.end) {
         if (number === 1) {
           qc.setpage({ go: true });
@@ -73,7 +75,6 @@ export const onmessageReactionAdd = async (reaction: MessageReaction | PartialMe
           qc.setpage({ go: false, end: false });
         } else {
           qc.setpage({ go: false });
-          pp = qc.page.nowpage;
         }
       }
       if (qc.page.list.length >= (pp*5)+number) {
@@ -83,12 +84,11 @@ export const onmessageReactionAdd = async (reaction: MessageReaction | PartialMe
         qc.start(reaction.message, user.id);
       }
     } else if (name === "↩️") {
-      if (qc.page.go !== null) {
+      if (qc.page.end) {
         qc.setpage({ end: false, go: false });
-      } else {
-        qc.setpage({ page: qc.page.page.slice(0,-1) });
-        qc.setpage({ nowpage: 0 });
       }
+      qc.setpage({ page: qc.page.page.slice(0,-1) });
+      qc.setpage({ nowpage: 0 });
       qc.start(reaction.message, user.id);
     }
     reaction.users.remove(user.id);

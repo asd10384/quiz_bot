@@ -66,14 +66,14 @@ function quizfix() {
           });
           return await QDB.guild.set(guildDB.id, { msgId: msg.id, scoreId: score.id }).then((val) => {
             if (val) {
-              console.log(`${msg.guild!.name} {\n  fix: 시작 fix 성공\n}`);
+              Logger.ready(`${msg.guild!.name} {\n  fix: 시작 fix 성공\n}`);
               client.getqc(msg.guild!).sendlog(`${msg.guild!.name} {\n  fix: 시작 fix 성공\n}`);
             } else {
-              console.log(`${msg.guild!.name} {\n  fix: 시작 fix 실패\n}`);
+              Logger.ready(`${msg.guild!.name} {\n  fix: 시작 fix 실패\n}`);
               client.getqc(msg.guild!).sendlog(`${msg.guild!.name} {\n  fix: 시작 fix 실패\n}`);
             }
           }).catch(() => {
-            console.log(`${msg.guild!.name} {\n  fix: 시작 fix 실패 ERR\n}`);
+            Logger.ready(`${msg.guild!.name} {\n  fix: 시작 fix 실패 ERR\n}`);
           });
         }
       }
