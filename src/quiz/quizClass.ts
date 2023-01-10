@@ -594,7 +594,9 @@ export class Quiz {
         if (channel?.type === ChannelType.GuildText) {
           if (!channel.messages.cache.get(guildDB.msgId) || !channel.messages.cache.get(guildDB.scoreId)) {
             channel.messages.fetch({ cache: true }).then(async (ms) => {
-              if (ms.size > 0) await channel.bulkDelete(ms.size).catch(() => {});
+              try {
+                if (ms.size > 0) await channel.bulkDelete(ms.size).catch(() => {});
+              } catch {}
               const msg = await channel.send({ content: "퀴즈오류해결중..." });
               const score = await channel.send({ content: "스코어보드오류해결중..." });
               client.getqc(guild).sendlog(`${guild.name} {\n  err: 퀴즈오류 + 스코어보드오류 해결중\n}`);

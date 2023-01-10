@@ -197,7 +197,9 @@ export default class implements Command {
     if (channel?.type === ChannelType.GuildText) {
       client.getqc(message.guild!).stop(message.guild!, true);
       await channel.messages.fetch({ cache: true }).then((msg) => {
-        if (msg.size > 0) (channel as TextChannel).bulkDelete(msg.size).catch(() => { if (client.debug) Logger.log('메세지 전체 삭제 오류'); });
+        try {
+          if (msg.size > 0) (channel as TextChannel).bulkDelete(msg.size).catch(() => { if (client.debug) Logger.log('메세지 전체 삭제 오류'); });
+        } catch {}
       });
     } else {
       channel = await message.guild!.channels.create({

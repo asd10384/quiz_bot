@@ -37,13 +37,13 @@ function quizfix() {
       if (guildDB.id && guildDB.channelId) {
         const channel = client.guilds.cache.get(guildDB.id)?.channels.cache.get(guildDB.channelId);
         if (channel?.type == ChannelType.GuildText) {
-          await channel.messages.fetch({ cache: true }).then(async (msgs) => {
-            try {
+          try {
+            await channel.messages.fetch({ cache: true }).then(async (msgs) => {
               if (msgs.size > 0) await channel.bulkDelete(msgs.size).catch(() => {
                 if (client.debug) Logger.error("메세지 전체 삭제 오류");
               });
-            } catch {}
-          });
+            });
+          } catch {}
           const msg = await channel.send({
             content: `${QUIZ_RULE(guildDB)}ㅤ`,
             embeds: [

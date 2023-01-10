@@ -72,6 +72,8 @@ export const onmessageReactionAdd = async (reaction: MessageReaction | PartialMe
         if (number === 1) {
           qc.setpage({ go: true });
         } else if (number === 2) {
+          qc.setpage({ page: qc.page.page.slice(0,-1) });
+          qc.setpage({ nowpage: 0 });
           qc.setpage({ go: false, end: false });
         } else {
           qc.setpage({ go: false });
