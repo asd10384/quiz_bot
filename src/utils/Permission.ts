@@ -5,7 +5,7 @@ import { client } from "..";
 import { QDB } from "../databases/Quickdb";
 
 const check_admin = (message: CommandInteraction | Message): boolean => {
-  if (process.env.ADMIN_ID && (process.env.ADMIN_ID === message.member?.user.id)) return true;
+  if (process.env.ADMIN_ID && (process.env.ADMIN_ID == message.member?.user.id)) return true;
   return false;
 }
 

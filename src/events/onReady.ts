@@ -15,7 +15,7 @@ export const onReady = () => {
   Logger.ready(`Activity: ${JSON.stringify(actlist)}`);
   Logger.ready(`로그확인: ${client.debug}`);
 
-  if (process.env.REFRESH_SLASH_COMMAND_ON_READY === "true") handler.registCachedCommands(client);
+  if (process.env.REFRESH_SLASH_COMMAND_ON_READY == "true") handler.registCachedCommands(client);
 
   quizfix();
 
@@ -49,7 +49,7 @@ function quizfix() {
             embeds: [
               client.mkembed({
                 title: `**현재 퀴즈가 시작되지 않았습니다**`,
-                description: `**정답설정: ${guildDB.options.anser}**\n**다음문제시간: ${guildDB.options.nexttime}초**`,
+                description: `**문제수 : ${guildDB.options.onetimemax}개씩**\n**다음문제시간: ${guildDB.options.nexttime}초**`,
                 image: `https://ytms.netlify.app/defult.png`,
                 footer: { text: `${client.prefix}퀴즈 도움말` }
               })

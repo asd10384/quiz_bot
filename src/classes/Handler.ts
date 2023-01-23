@@ -50,7 +50,7 @@ export class SlashHandler {
       { body: [] }
     ).then(() => Logger.debug('Successfully deleted commands.'));
 
-    if (process.env.ENVIROMENT?.toUpperCase() === 'DEV') {
+    if (process.env.ENVIROMENT?.toUpperCase() == 'DEV') {
       await rest.put(
         Routes.applicationGuildCommands(process.env.DISCORD_CLIENTID, process.env.ENVIROMENT_DEV_GUILDID!),
         { body: [] }

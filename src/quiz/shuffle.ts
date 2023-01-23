@@ -4,7 +4,7 @@ import { Guild } from "discord.js";
 export const shuffle = (guild: Guild) => {
   const qc = client.getqc(guild);
   qc.setqueue(fshuffle(qc.queue));
-  qc.setmsg(guild);
+  qc.setMsg();
 }
 
 export const fshuffle = (list: any[]) => {

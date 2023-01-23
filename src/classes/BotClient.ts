@@ -33,7 +33,7 @@ export class BotClient extends Client {
     if (deletetime < 100) deletetime = 100;
     setTimeout(() => {
       try {
-        if (message.deletable) message.delete();
+        if (message.deletable) message.delete().catch(() => {});
       } catch {};
     }, deletetime);
   }
@@ -96,11 +96,11 @@ export class BotClient extends Client {
     var text = "";
     metadata.options?.forEach((opt) => {
       text += `/${name} ${opt.name}`;
-      if (opt.type === ApplicationCommandOptionType.Subcommand && opt.options) {
+      if (opt.type == ApplicationCommandOptionType.Subcommand && opt.options) {
         if (opt.options.length > 1) {
           text = "";
           opt.options.forEach((opt2) => {
-            text += `/${name} ${opt.name} [${opt2.type}] : ${opt.description}\n`;
+            text += `/${name} ${opt.name} [${opt2.name}] : ${opt.description}\n`;
           });
         } else {
           text += ` [${opt.options[0].type}] : ${opt.description}\n`;

@@ -16,8 +16,9 @@ export interface guildData {
   channelId: string;
   scoreId: string;
   msgId: string;
+  overLapQueue: string[];
   options: {
-    anser: string;
+    onetimemax: number;
     nexttime: number;
   };
 }
@@ -29,8 +30,9 @@ interface getguildData {
   channelId?: string;
   scoreId?: string;
   msgId?: string;
+  overLapQueue?: string[];
   options?: {
-    anser: string;
+    onetimemax: number;
     nexttime: number;
   };
 }
@@ -60,7 +62,7 @@ const guild_set = (guildId: string, getqdb: getguildData) => new Promise<boolean
 const guild_get = (guild: Guild) => new Promise<guildData>((res, rej) => {
   qdb.table("s"+guild.id).all().then(async (guildData) => {
     let output: {[key: string]: any} = {};
-    if (guildData.length === 0 || guildData.some((val) => val.id !== "id")) {
+    if (guildData.length == 0 || guildData.some((val) => val.id !== "id")) {
       let serverlist: string[] = await qdb.get("ids") || [];
       if (!serverlist.includes(guild.id)) {
         serverlist.push(guild.id);
@@ -74,8 +76,9 @@ const guild_get = (guild: Guild) => new Promise<guildData>((res, rej) => {
         msgId: "",
         scoreId: "",
         role: [],
+        overLapQueue: [],
         options: {
-          anser: "",
+          onetimemax: 50,
           nexttime: 10
         }
       };
@@ -133,7 +136,7 @@ const user_get = (guild: Guild, member: GuildMember) => new Promise<userData>(as
   await guild_get(guild).catch(rej);
   qdb.table("s"+guild.id).table("u"+member.id).all().then(async (userData) => {
     let output: {[key: string]: any} = {};
-    if (userData.length === 0 || userData.some((val) => val.id !== "id")) {
+    if (userData.length == 0 || userData.some((val) => val.id !== "id")) {
       let userlist: string[] = await qdb.table("s"+guild.id).get("idu") || [];
       if (!userlist.includes(guild.id)) {
         userlist.push(guild.id);

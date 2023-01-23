@@ -3,10 +3,10 @@ import { MessageReaction, PartialMessageReaction, PartialUser, User } from "disc
 import { client } from "..";
 
 const smallnum = (s: string): number => {
-  return s === "1️⃣" ? 1
-    : s === "2️⃣" ? 2
-    : s === "3️⃣" ? 3
-    : s === "4️⃣" ? 4
+  return s == "1️⃣" ? 1
+    : s == "2️⃣" ? 2
+    : s == "3️⃣" ? 3
+    : s == "4️⃣" ? 4
     : 5
 }
 
@@ -23,21 +23,21 @@ export const onmessageReactionAdd = async (reaction: MessageReaction | PartialMe
   const name = reaction.emoji.name;
   if (!name) return;
 
-  if (reaction.message.channelId === GDB.channelId) {
+  if (reaction.message.channelId == GDB.channelId) {
     if (qc.playing) {
-      if (name === "⏭️") {
-        qc.skip(reaction.message, user.id);
+      if (name == "⏭️") {
+        qc.setSkip(reaction.message, user.id);
       }
-      if (name === "💡") {
-        qc.hint(reaction.message, user.id);
+      if (name == "💡") {
+        qc.setHint(reaction.message, user.id);
       }
       return reaction.users.remove(user.id);
     }
-    if (qc.page.start !== null && qc.page.start !== user.id) {
+    if (qc.page.userId != user.id) {
       reaction.message.channel.send({ embeds: [
         client.mkembed({
           title: `**퀴즈 오류**`,
-          description: `<@${qc.page.start}>님이 먼저 사용하셨습니다.`,
+          description: `<@${qc.page.userId}>님이 <@${user.id}>님보다 먼저 사용하셨습니다.`,
           color: "DarkRed"
         })
       ] }).then(m => client.msgdelete(m, 1));
@@ -55,43 +55,34 @@ export const onmessageReactionAdd = async (reaction: MessageReaction | PartialMe
     }
     qc.setcooldown(Date.now());
     if (["⬅️", "➡️"].includes(name)) {
-      let getnowpage = qc.page.nowpage;
-      getnowpage = (name === "⬅️") ? getnowpage - 1 : getnowpage + 1;
+      let getnowpage = qc.page.page;
+      getnowpage = (name == "⬅️") ? getnowpage - 1 : getnowpage + 1;
       if (getnowpage < 0) {
-        qc.setpage({ nowpage: 0 });
-      } else if (getnowpage > qc.page.nownummax[1]) {
-        qc.setpage({ nowpage: qc.page.nownummax[1] });
+        qc.setpage({ page: 0 });
+      } else if (getnowpage > qc.page.maxpage) {
+        qc.setpage({ page: qc.page.maxpage });
       } else {
-        qc.setpage({ nowpage: getnowpage });
+        qc.setpage({ page: getnowpage });
       }
-      qc.start(reaction.message, user.id);
+      qc.ready(reaction.message, user.id);
     } else if (["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"].includes(name)) {
       var number = smallnum(name);
-      let pp = qc.page.nowpage;
-      if (qc.page.end) {
-        if (number === 1) {
+      let pp = qc.page.page;
+      if (qc.page.check) {
+        if (number == 1) {
           qc.setpage({ go: true });
-        } else if (number === 2) {
-          qc.setpage({ page: qc.page.page.slice(0,-1) });
-          qc.setpage({ nowpage: 0 });
-          qc.setpage({ go: false, end: false });
+        } else if (number == 2) {
+          qc.setpage({ name: null, page: 0, check: false, go: false });
         } else {
           qc.setpage({ go: false });
         }
+      } else if (qc.page.list.length >= (pp*5)+number) {
+        qc.setpage({ name: qc.page.list[(pp*5)+number-1], check: true });
       }
-      if (qc.page.list.length >= (pp*5)+number) {
-        let getpage = qc.page.page;
-        getpage.push(qc.page.list[(pp*5)+number-1]);
-        qc.setpage({ page: getpage });
-        qc.start(reaction.message, user.id);
-      }
-    } else if (name === "↩️") {
-      if (qc.page.end) {
-        qc.setpage({ end: false, go: false });
-      }
-      qc.setpage({ page: qc.page.page.slice(0,-1) });
-      qc.setpage({ nowpage: 0 });
-      qc.start(reaction.message, user.id);
+      qc.ready(reaction.message, user.id);
+    } else if (name == "↩️") {
+      qc.setpage({ page: 0, name: null, check: false, go: false });
+      qc.ready(reaction.message, user.id);
     }
     reaction.users.remove(user.id);
   }

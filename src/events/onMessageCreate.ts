@@ -4,7 +4,7 @@ import { Logger } from "../utils/Logger";
 import { QDB } from "../databases/Quickdb";
 
 export const onMessageCreate = async (message: Message) => {
-  if (message.author.bot || message.channel.type === ChannelType.DM) return;
+  if (message.author.bot || message.channel.type == ChannelType.DM) return;
   if (message.content.startsWith(client.prefix)) {
     const content = message.content.slice(client.prefix.length).trim();
     const args = content.split(/ +/g);
@@ -21,17 +21,15 @@ export const onMessageCreate = async (message: Message) => {
     }
   } else {
     const GDB = await QDB.guild.get(message.guild!);
-    if (GDB.channelId === message.channelId) {
+    if (GDB.channelId == message.channelId) {
       const qc = client.getqc(message.guild!);
       if (qc.playing) {
         const text = message.content.trim().replace(/ +/g, " ").toLowerCase();
-        if (text === "스킵" || text === "skip") return qc.skip(message, message.author.id);
-        if (text === "힌트" || text === "hint") return qc.hint(message, message.author.id);
-        if (text === qc.nowplaying?.name.toLowerCase() && !qc.cananser) {
-          qc.setcananser(true);
-          if (qc.playquiztype.quiz === "음악퀴즈") return qc.music_anser(message, [], message.author.id);
-          // if (qc.playquiztype.quiz === "그림퀴즈") return qc.img_anser(message, [], message.author.id);
-          return qc.stop();
+        if (text == "스킵" || text == "skip") return qc.setSkip(message, message.author.id);
+        if (text == "힌트" || text == "hint") return qc.setHint(message, message.author.id);
+        if (text == qc.nowplaying?.name.toLowerCase() && qc.cananser) {
+          qc.setcananser(false);
+          return qc.anser([], message.author.id);
         }
       } else {
         // 쿨타임

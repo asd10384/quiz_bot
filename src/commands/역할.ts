@@ -84,9 +84,9 @@ export default class implements Command {
     const cmd = interaction.options.data[0];
     const role = cmd.options ? cmd.options[0]?.role : undefined;
     const GDB = await QDB.guild.get(interaction.guild!);
-    if (cmd.name === '목록') return await interaction.followUp({ embeds: [ this.list(GDB) ] });
-    if (cmd.name === '추가') return await interaction.followUp({ embeds: [ await this.add(GDB, role!.id) ] });
-    if (cmd.name === '제거') return await interaction.followUp({ embeds: [ await this.remove(GDB, role!.id) ] });
+    if (cmd.name == '목록') return await interaction.followUp({ embeds: [ this.list(GDB) ] });
+    if (cmd.name == '추가') return await interaction.followUp({ embeds: [ await this.add(GDB, role!.id) ] });
+    if (cmd.name == '제거') return await interaction.followUp({ embeds: [ await this.remove(GDB, role!.id) ] });
     return await interaction.followUp({ embeds: [
       client.help(this.name, this.metadata, this.msgmetadata)!
     ] });
@@ -99,15 +99,15 @@ export default class implements Command {
       description: "다시시도해주세요.",
       color: "DarkRed"
     }) ] }).then(m => client.msgdelete(m, 1));
-    if (args[0] === "목록") return message.channel.send({ embeds: [ this.list(GDB) ] }).then(m => client.msgdelete(m, 4));
-    if (args[0] === "추가") {
+    if (args[0] == "목록") return message.channel.send({ embeds: [ this.list(GDB) ] }).then(m => client.msgdelete(m, 4));
+    if (args[0] == "추가") {
       if (args[1]) {
         const role = message.guild?.roles.cache.get(args[1]);
         if (role) return message.channel.send({ embeds: [ await this.add(GDB, role.id) ] }).then(m => client.msgdelete(m, 2));
       }
       return message.channel.send({ embeds: [ this.err("추가", "역할을 찾을수 없습니다.") ] }).then(m => client.msgdelete(m, 1));
     }
-    if (args[0] === "제거") {
+    if (args[0] == "제거") {
       if (args[1]) {
         const role = message.guild?.roles.cache.get(args[1]);
         if (role) return message.channel.send({ embeds: [ await this.remove(GDB, role.id) ] }).then(m => client.msgdelete(m, 2));

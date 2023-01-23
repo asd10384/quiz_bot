@@ -5,7 +5,7 @@ import { Message, EmbedBuilder, ApplicationCommandOptionType, ChatInputApplicati
 import { check_permission as ckper, embed_permission as emper } from "../utils/Permission";
 import { guildData, QDB } from "../databases/Quickdb";
 import { QUIZ_RULE } from "../config/config";
-import { getuserchannel } from "../quiz/getChannel";
+import { getUserChannel } from "../quiz/getChannel";
 import { DiscordGatewayAdapterCreator, joinVoiceChannel } from "@discordjs/voice";
 import { Logger } from "../utils/Logger";
 
@@ -36,6 +36,11 @@ export default class implements Command {
       },
       {
         type: ApplicationCommandOptionType.Subcommand,
+        name: "중복초기화",
+        description: "중복방지를위해 저장한 목록 제거."
+      },
+      {
+        type: ApplicationCommandOptionType.Subcommand,
         name: "fix",
         description: "퀴즈 채널의 오류를 수정합니다."
       },
@@ -63,13 +68,13 @@ export default class implements Command {
   /** 실행되는 부분 */
   async slashRun(interaction: CommandInteraction) {
     const cmd = interaction.options.data[0];
-    if (cmd.name === "join") {
+    if (cmd.name == "join") {
       const channel = cmd.options ? cmd.options[0]?.channel : undefined;
       if (!channel) return client.mkembed({
         title: `채널을 찾을수 없음`,
         color: "DarkRed"
       });
-      if (channel.type === ChannelType.GuildVoice || channel.type === ChannelType.GuildStageVoice) {
+      if (channel.type == ChannelType.GuildVoice || channel.type == ChannelType.GuildStageVoice) {
         joinVoiceChannel({
           adapterCreator: interaction.guild!.voiceAdapterCreator! as DiscordGatewayAdapterCreator,
           channelId: channel.id,
@@ -81,26 +86,31 @@ export default class implements Command {
         color: "DarkRed"
       });
     }
-    if (cmd.name === "채널생성") {
+    if (cmd.name == "채널생성") {
       if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
       const guildDB = await QDB.guild.get(interaction.guild!);
       return await interaction.editReply({ content: await this.create_channel(interaction, guildDB) });
     }
-    if (cmd.name === "fix") {
+    if (cmd.name == "중복초기화") {
+      if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
+      const guildDB = await QDB.guild.get(interaction.guild!);
+      return await interaction.editReply({ content: await this.overLapReset(guildDB) });
+    }
+    if (cmd.name == "fix") {
       if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
       const guildDB = await QDB.guild.get(interaction.guild!);
       return await interaction.editReply({ content: await this.fix(interaction, guildDB) });
     }
-    if (cmd.name === '도움말') {
+    if (cmd.name == '도움말') {
       return await interaction.editReply({ embeds: [ this.help() ] });
     }
     return await interaction.followUp({ embeds: [ this.help() ] });
   }
   async messageRun(message: Message, args: string[]) {
     const qc = client.getqc(message.guild!);
-    if (args[0] === "시작") {
+    if (args[0] == "시작") {
       client.msgdelete(message, 10, true);
-      if (qc.page.start.length > 0) {
+      if (qc.page.userId) {
         return message.channel.send({ embeds: [
           client.mkembed({
             title: `**퀴즈 시작 오류**`,
@@ -109,45 +119,52 @@ export default class implements Command {
           })
         ] }).then(m => client.msgdelete(m, 1));
       }
-      if (!getuserchannel(message.member!)) return message.channel.send({ embeds: [
+      if (!getUserChannel(message.member!)) return message.channel.send({ embeds: [
         client.mkembed({
           title: `\` 음성 오류 \``,
           description: `먼저 음성채널에 들어간뒤 사용해주세요.`,
           color: "DarkRed"
         })
       ] }).then(m => client.msgdelete(m, 1));
-      return qc.start(message, message.author.id);
+      return qc.ready(message, message.author.id);
     }
-    if (args[0] === "중지" || args[0] === "종료") {
+    if (args[0] == "중복초기화") {
+      client.msgdelete(message, 10, true);
+      if (qc.page.userId) {
+        return message.channel.send({ embeds: [
+          client.mkembed({
+            title: `**퀴즈 시작 오류**`,
+            description: `이미 퀴즈가 시작되었습니다.\n퀴즈를 종료하고 사용해주세요.`,
+            color: "DarkRed"
+          })
+        ] }).then(m => client.msgdelete(m, 1));
+      }
+      const guildDB = await QDB.guild.get(message.guild!);
+      return message.channel.send({ content: await this.overLapReset(guildDB) }).then(m => client.msgdelete(m, 2));
+    }
+    if (args[0] == "중지" || args[0] == "종료") {
       return qc.stop();
     }
-    if (args[0] === "설정") {
+    if (args[0] == "설정") {
       client.msgdelete(message, 10, true);
       if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] }).then(m => client.msgdelete(m, 1));
       return message.channel.send({ content: "현재 제작중 입니다." }).then(m => client.msgdelete(m, 1));
     }
-    if (args[0] === "스킵") {
+    if (args[0] == "스킵") {
       client.msgdelete(message, 10, true);
       if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] }).then(m => client.msgdelete(m, 1));
-      if (qc.playquiztype.quiz === "음악퀴즈") return qc.music_anser(message, ["스킵", "관리자"], message.author.id);
-      // if (qc.playquiztype.quiz === "그림퀴즈") return qc.img_anser(message, ["스킵", "관리자"], message.author.id);
-      return qc.stop();
+      return qc.anser(["스킵", "관리자"], message.author.id);
     }
-    if (args[0] === "힌트") {
+    if (args[0] == "힌트") {
       client.msgdelete(message, 10, true);
       if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] }).then(m => client.msgdelete(m, 1));
-      return qc.hint(message, message.author.id, true);
+      return qc.setHint(message, message.author.id, true);
     }
-    if (args[0] === "fix") {
+    if (args[0] == "fix") {
       const guildDB = await QDB.guild.get(message.guild!);
-      if (!guildDB) return message.channel.send({ embeds: [ client.mkembed({
-        title: `데이터베이스 오류`,
-        description: "데이터베이스를 찾을수없음",
-        color: "DarkRed"
-      }) ] }).then(m => client.msgdelete(m, 1));
       return this.fix(message, guildDB);
     }
-    if (args[0] === "도움말" || args[0] === "help") return message.channel.send({ embeds: [ this.help() ] }).then(m => client.msgdelete(m, 4.5));
+    if (args[0] == "도움말" || args[0] == "help") return message.channel.send({ embeds: [ this.help() ] }).then(m => client.msgdelete(m, 4.5));
   }
 
   help(): EmbedBuilder {
@@ -166,7 +183,7 @@ export default class implements Command {
       embeds: [
         client.mkembed({
           title: `**현재 퀴즈가 시작되지 않았습니다**`,
-          description: `**정답설정: ${guildDB.options.anser}**\n**다음문제시간: ${guildDB.options.nexttime}초**`,
+          description: `**문제수 : ${guildDB.options.onetimemax}개씩**\n**다음문제시간: ${guildDB.options.nexttime}초**`,
           image: `https://ytms.netlify.app/defult.png`,
           footer: { text: `${client.prefix}퀴즈 도움말` }
         })
@@ -194,11 +211,11 @@ export default class implements Command {
 
   async fix(message: Message | CommandInteraction, guildDB: guildData): Promise<string> {
     let channel = message.guild!.channels.cache.get(guildDB.channelId);
-    if (channel?.type === ChannelType.GuildText) {
+    if (channel?.type == ChannelType.GuildText) {
       client.getqc(message.guild!).stop(true);
       await channel.messages.fetch({ cache: true }).then((msg) => {
         try {
-          if (msg.size > 0) (channel as TextChannel).bulkDelete(msg.size).catch(() => { if (client.debug) Logger.log('메세지 전체 삭제 오류'); });
+          if (msg.size > 0) (channel as TextChannel).bulkDelete(msg.size).catch(() => { if (client.debug) Logger.error('메세지 전체 삭제 오류'); });
         } catch {}
       });
     } else {
@@ -214,7 +231,7 @@ export default class implements Command {
         embeds: [
           client.mkembed({
             title: `**현재 퀴즈가 시작되지 않았습니다**`,
-            description: `**정답설정: ${guildDB.options.anser}**\n**다음문제시간: ${guildDB.options.nexttime}초**`,
+            description: `**문제수 : ${guildDB.options.onetimemax}개씩**\n**다음문제시간: ${guildDB.options.nexttime}초**`,
             image: `https://ytms.netlify.app/defult.png`,
             footer: { text: `${client.prefix}퀴즈 도움말` }
           })
@@ -236,5 +253,11 @@ export default class implements Command {
       }).catch(() => {});
     }, 350);
     return `fix 실행 완료.`;
+  }
+
+  async overLapReset(guildDB: guildData): Promise<string> {
+    const check = await QDB.guild.set(guildDB.id, { overLapQueue: [] });
+    if (check) return "초기화 완료";
+    return "초기화 실패";
   }
 }

@@ -42,7 +42,7 @@ export default class implements Command {
   /** 실행되는 부분 */
   async slashRun(interaction: CommandInteraction) {
     const cmd = interaction.options.data[0];
-    if (cmd.name === "test") {
+    if (cmd.name == "test") {
       const data = cmd.options ? cmd.options[0]?.value : undefined;
       if (data) return await interaction.followUp({ embeds: [
         client.mkembed({
