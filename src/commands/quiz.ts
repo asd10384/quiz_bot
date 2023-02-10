@@ -128,7 +128,7 @@ export default class implements Command {
       ] }).then(m => client.msgdelete(m, 1));
       return qc.ready(message, message.author.id);
     }
-    if (args[0] == "중복초기화") {
+    else if (args[0] == "중복초기화") {
       client.msgdelete(message, 10, true);
       if (qc.page.userId) {
         return message.channel.send({ embeds: [
@@ -142,29 +142,32 @@ export default class implements Command {
       const guildDB = await QDB.guild.get(message.guild!);
       return message.channel.send({ content: await this.overLapReset(guildDB) }).then(m => client.msgdelete(m, 2));
     }
-    if (args[0] == "중지" || args[0] == "종료") {
+    else if (args[0] == "중지" || args[0] == "종료") {
       return qc.stop();
     }
-    if (args[0] == "설정") {
+    else if (args[0] == "설정") {
       client.msgdelete(message, 10, true);
       if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] }).then(m => client.msgdelete(m, 1));
       return message.channel.send({ content: "현재 제작중 입니다." }).then(m => client.msgdelete(m, 1));
     }
-    if (args[0] == "스킵") {
+    else if (args[0] == "스킵") {
       client.msgdelete(message, 10, true);
       if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] }).then(m => client.msgdelete(m, 1));
       return qc.anser(["스킵", "관리자"], message.author.id);
     }
-    if (args[0] == "힌트") {
+    else if (args[0] == "힌트") {
       client.msgdelete(message, 10, true);
       if (!(await ckper(message))) return message.channel.send({ embeds: [ emper ] }).then(m => client.msgdelete(m, 1));
       return qc.setHint(message, message.author.id, true);
     }
-    if (args[0] == "fix") {
+    else if (args[0] == "fix") {
       const guildDB = await QDB.guild.get(message.guild!);
       return this.fix(message, guildDB);
     }
-    if (args[0] == "도움말" || args[0] == "help") return message.channel.send({ embeds: [ this.help() ] }).then(m => client.msgdelete(m, 4.5));
+    else if (args[0] == "도움말" || args[0] == "help") return message.channel.send({ embeds: [ this.help() ] }).then(m => client.msgdelete(m, 4.5));
+    else {
+      client.msgdelete(message, 50, true);
+    }
   }
 
   help(): EmbedBuilder {
