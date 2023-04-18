@@ -12,7 +12,7 @@ export const onInteractionCreate = async (interaction: Interaction) => {
   
   if (interaction.isButton()) {
     const args = interaction.customId.split("-");
-    if (!args || args.length == 0) return;
+    if (!args || args.length === 0) return;
     await interaction.deferReply({ ephemeral: true, fetchReply: true });
     const command = handler.commands.get(args.shift()!);
     if (command && command.buttonRun) return command.buttonRun(interaction, args);

@@ -1,16 +1,15 @@
 import "dotenv/config";
 import { ApplicationCommandOptionType, ChatInputApplicationCommandData, Client, ClientEvents, ColorResolvable, EmbedBuilder, EmbedField, Guild, Message } from "discord.js";
 import { Consts } from "../config/consts";
-import { Quiz } from "../quiz/quizClass";
 // import { Logger } from "../utils/Logger";
+import { Quiz } from "../quiz/quizClass";
 
 export class BotClient extends Client {
   public debug: boolean;
   public prefix: string;
   public embedColor: ColorResolvable;
-  public quiz: Map<string, Quiz>;
-  public cooldowntime: number;
-  public sleep: (ms: number) => Promise<void>;
+  public ttsClass: Map<string, Quiz>;
+  public cooldownTime: number;
 
   public constructor() {
     super({ intents: Consts.CLIENT_INTENTS });
@@ -21,10 +20,9 @@ export class BotClient extends Client {
     this.embedColor = process.env.EMBED_COLOR
       ? process.env.EMBED_COLOR.trim().charAt(0).toLocaleUpperCase() + process.env.EMBED_COLOR.trim().slice(1).toLocaleLowerCase() as ColorResolvable
       : "Orange";
-    this.sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
-    this.quiz = new Map();
-    this.cooldowntime = 1250;
 
+    this.ttsClass = new Map();
+    this.cooldownTime = 0;
     this.login(process.env.DISCORD_TOKEN);
   }
 
@@ -45,7 +43,7 @@ export class BotClient extends Client {
    * * 'func'의 내용은 기본적으로 'client.on'을 따름
    * * 'extra'를 입력할 경우 추가되어 같이 전달
    * 
-   * @example
+   * @QUIZmple
    *    client.onEvent('ready', (client, info) => {
    *      Logger.ready(client?.user.username, '봇이 준비되었습니다.', info) // 출력: OOO 봇이 준비되었습니다. 추가 정보
    *    }, ['추가 정보']);
@@ -55,11 +53,6 @@ export class BotClient extends Client {
    * @param extra 추가로 전달할 목록
    */
   public readonly onEvent = (event: keyof ClientEvents, func: Function, ...extra: any[]) => this.on(event, (...args) => func(...args, ...extra));
-
-  public getqc = (guild: Guild): Quiz => {
-    if (!this.quiz.has(guild.id)) this.quiz.set(guild.id, new Quiz(guild));
-    return this.quiz.get(guild.id)!;
-  }
 
   public mkembed(data: {
     title?: string,
@@ -91,16 +84,21 @@ export class BotClient extends Client {
     return embed;
   }
 
+  getqc(guild: Guild): Quiz {
+    if (!this.ttsClass.has(guild.id)) this.ttsClass.set(guild.id, new Quiz(guild));
+    return this.ttsClass.get(guild.id)!;
+  }
+
   public help(name: string, metadata: ChatInputApplicationCommandData, msgmetadata?: { name: string, des: string }[]): EmbedBuilder | undefined {
     const prefix = this.prefix;
     var text = "";
     metadata.options?.forEach((opt) => {
       text += `/${name} ${opt.name}`;
-      if (opt.type == ApplicationCommandOptionType.Subcommand && opt.options) {
+      if (opt.type === ApplicationCommandOptionType.Subcommand && opt.options) {
         if (opt.options.length > 1) {
           text = "";
           opt.options.forEach((opt2) => {
-            text += `/${name} ${opt.name} [${opt2.name}] : ${opt.description}\n`;
+            text += `/${name} ${opt.name} [${opt2.type}] : ${opt.description}\n`;
           });
         } else {
           text += ` [${opt.options[0].type}] : ${opt.description}\n`;

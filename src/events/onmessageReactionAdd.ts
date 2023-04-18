@@ -1,16 +1,14 @@
 import { QDB } from "../databases/Quickdb";
 import { MessageReaction, PartialMessageReaction, PartialUser, User } from "discord.js";
-import { client } from "..";
+import { client } from "../index";
 
-const smallnum = (s: string): number => {
-  return s == "1️⃣" ? 1
-    : s == "2️⃣" ? 2
-    : s == "3️⃣" ? 3
-    : s == "4️⃣" ? 4
-    : 5
-}
+const smallnum = (s: string): number => s == "1️⃣" ? 1
+  : s == "2️⃣" ? 2
+  : s == "3️⃣" ? 3
+  : s == "4️⃣" ? 4
+  : 5;
 
-export const onmessageReactionAdd = async (reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser): Promise<any> => {
+export const onmessageReactionAdd = async (reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) => {
   if (user.bot) return;
   if (!reaction.message.guildId) return;
 
@@ -43,11 +41,11 @@ export const onmessageReactionAdd = async (reaction: MessageReaction | PartialMe
       ] }).then(m => client.msgdelete(m, 1));
       return reaction.users.remove(user.id);
     }
-    if (qc.cooldown+client.cooldowntime > Date.now()) {
+    if (qc.cooldown+client.cooldownTime > Date.now()) {
       reaction.message.channel.send({ embeds: [
         client.mkembed({
           title: `**퀴즈 오류**`,
-          description: `이모지를 너무 빨리 눌렀습니다.\n${((qc.cooldown+client.cooldowntime-Date.now())/1000).toFixed(2)}초 뒤에 사용해주세요.`,
+          description: `이모지를 너무 빨리 눌렀습니다.\n${((qc.cooldown+client.cooldownTime-Date.now())/1000).toFixed(2)}초 뒤에 사용해주세요.`,
           color: "DarkRed"
         })
       ] }).then(m => client.msgdelete(m, 1));
@@ -86,4 +84,5 @@ export const onmessageReactionAdd = async (reaction: MessageReaction | PartialMe
     }
     reaction.users.remove(user.id);
   }
+  return;
 }

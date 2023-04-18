@@ -318,57 +318,46 @@ export class Quiz {
       }) ] }).then(m => client.msgdelete(m, 1));
     }
     let first: { name: string, vocal: string, link: string; realnumber: number; }[] = [];
-    $("body div.music div").each((_i, el) => {
+    let firstNotOverlap: { name: string, vocal: string, link: string; realnumber: number; }[] = [];
+    const GDB = await QDB.guild.get(this.guild);
+    $("body div.music div").each((i, el) => {
+      let link = $(el).children("a.link").text().trim();
+      if (!GDB.overLapQueue.includes(this.getYID(link))) {
+        firstNotOverlap.push({
+          name: ($(el).children("a.name").text().trim()),
+          vocal: ($(el).children("a.vocal").text().trim()),
+          link: ($(el).children("a.link").text().trim()),
+          realnumber: i+1
+        });
+      }
       first.push({
         name: ($(el).children("a.name").text().trim()),
         vocal: ($(el).children("a.vocal").text().trim()),
         link: ($(el).children("a.link").text().trim()),
-        realnumber: 0
+        realnumber: i+1
       });
     });
-    const GDB = await QDB.guild.get(this.guild);
-    let second: { name: string, vocal: string, link: string; realnumber: number; }[] = [];
-    let count: number[] = [];
-    count = Array.from(Array(first.length).keys());
-    for (let i=0; i<3; i++) count = fshuffle(count);
     const maxcount = GDB.options.onetimemax;
+    if (firstNotOverlap.length < maxcount) {
+      await QDB.guild.set(this.guild, { overLapQueue: [] }).catch(() => {});
+    } else {
+      first = firstNotOverlap;
+    }
+    let second: { name: string, vocal: string, link: string; realnumber: number; }[] = [];
+    let count: number[] = Array.from(Array(first.length).keys());
+    for (let i=0; i<5; i++) count = fshuffle(count);
     var logtext = `${this.guild.name} {\n`;
     var loopcount = 0;
     for (let i=0; i<maxcount; i++) {
       loopcount++;
       if (loopcount > first.length) {
         break;
-      }
-      if (!first[count[i]]?.name) {
+      } else if (!first[count[i]]?.name) {
+        first = first.filter((_v, i2) => i2 != count[i]);
+        count = count.filter((_v, i2) => i2 != i);
         i--;
         continue;
-      }
-      if (GDB.overLapQueue.includes(this.getYID(first[count[i]].link))) {
-        i--;
-        continue;
-      }
-      second.push({
-        name: first[count[i]].name,
-        vocal: first[count[i]].vocal,
-        link: first[count[i]].link,
-        realnumber: count[i]
-      });
-      logtext += `  ${i+1}. [${count[i]}] ${first[count[i]].vocal} - ${first[count[i]].name}\n`;
-    }
-    if (second.length < maxcount) {
-      second = [];
-      for (let i=0; i<3; i++) count = fshuffle(count);
-      logtext = `${this.guild.name} {\n`;
-      loopcount = 0;
-      for (let i=0; i<maxcount; i++) {
-        loopcount++;
-        if (loopcount > first.length) {
-          break;
-        }
-        if (!first[count[i]]?.name) {
-          i--;
-          continue;
-        }
+      } else {
         second.push({
           name: first[count[i]].name,
           vocal: first[count[i]].vocal,
@@ -394,9 +383,9 @@ export class Quiz {
     this.Player = undefined;
     var voicechannel: VoiceChannel | StageChannel | null | undefined = undefined;
     const Textchannel = await this.getTextChannel();
-    var connection = getVoiceConnection(this.guild.id);
-    if (!connection) voicechannel = await getBotChannel(this.guild);
-    if (!connection && !voicechannel && this.page.userId) voicechannel = getUserChannel(this.guild.members.cache.get(this.page.userId));
+    voicechannel = await getBotChannel(this.guild);
+    if (!voicechannel && this.page.userId) voicechannel = getUserChannel(this.guild.members.cache.get(this.page.userId));
+    let connection = getVoiceConnection(this.guild.id);
     if (!connection && !voicechannel) return Textchannel?.send({ embeds: [
       client.mkembed({
         title: `\` 음성 오류 \``,
@@ -407,6 +396,10 @@ export class Quiz {
     if (this.count > this.maxcount) return this.stop();
     const data = this.queue.shift();
     if (!data) return this.stop();
+    if (!data.link || !data.name) {
+      if (client.debug) Logger.error("데이터를 찾을수 없음: " + JSON.stringify(data));
+      return this.anser(["스킵", "오류"], userId);
+    }
     const yid = this.getYID(data.link);
     this.nowplaying = {
       ...data,
@@ -419,7 +412,7 @@ export class Quiz {
       : `https://img.youtube.com/vi/${this.nowplaying?.link.replace("https://youtu.be/","")}/sddefault.jpg`;
     let overLapQueue = (await QDB.guild.get(this.guild)).overLapQueue;
     overLapQueue.push(yid);
-    await QDB.guild.set(this.guild.id, { overLapQueue: overLapQueue });
+    await QDB.guild.set(this.guild, { overLapQueue: overLapQueue });
     await this.bulkMessage();
     this.setMsg();
     this.checkMsg();
@@ -569,7 +562,7 @@ export class Quiz {
               const msg = await channel.send({ content: "퀴즈오류해결중..." });
               const score = await channel.send({ content: "스코어보드오류해결중..." });
               client.getqc(this.guild).sendlog(`${this.guild.name} {\n  err: 퀴즈오류 + 스코어보드오류 해결중\n}`);
-              QDB.guild.set(this.guild.id, { msgId: msg.id, scoreId: score.id }).then(() => {
+              QDB.guild.set(this.guild, { msgId: msg.id, scoreId: score.id }).then(() => {
                 setTimeout(() => {
                   this.setMsg();
                   this.setScore();
@@ -660,12 +653,14 @@ export class Quiz {
             **정답자 : ???**
             **[ ${this.count} / ${this.maxcount} ]**
           `)
+          .setFooter({ text: `재생한 노래: ${guildDB.overLapQueue.length}개` })
           .setImage(`https://ytms.netlify.app/question_mark.png`);
       }
     } else {
       embed.setTitle(`**현재 퀴즈가 시작되지 않았습니다.**`)
         .setDescription(`**문제수 : ${guildDB.options.onetimemax}개씩**\n**다음문제시간 : ${guildDB.options.nexttime}초**`)
-        .setImage(`https://ytms.netlify.app/defult.png`);
+        .setImage(`https://ytms.netlify.app/defult.png`)
+        .setFooter({ text: `재생한 노래: ${guildDB.overLapQueue.length}개` });
     }
     return embed;
   }

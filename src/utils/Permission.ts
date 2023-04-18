@@ -1,11 +1,11 @@
+import "dotenv/config";
 import { EmbedBuilder } from "@discordjs/builders";
 import { CommandInteraction, GuildMemberRoleManager, Message, PermissionsBitField } from "discord.js";
-import "dotenv/config";
 import { client } from "..";
 import { QDB } from "../databases/Quickdb";
 
 const check_admin = (message: CommandInteraction | Message): boolean => {
-  if (process.env.ADMIN_ID && (process.env.ADMIN_ID == message.member?.user.id)) return true;
+  if ((process.env.ADMIN_ID?.trim() ?? "") === message.member?.user.id) return true;
   return false;
 }
 
@@ -20,6 +20,6 @@ export const check_permission = async (message: CommandInteraction | Message): P
 }
 
 export const embed_permission: EmbedBuilder = client.mkembed({
-  description: `이 명령ㅇ어를 사용할\n권한이 없습니다.`,
+  description: `이 명령어를 사용할\n권한이 없습니다.`,
   color: "DarkRed"
 });

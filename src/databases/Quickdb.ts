@@ -41,146 +41,120 @@ interface getguildData {
 export interface userData {
   id: string;
   name: string;
+  guildList: string[];
 }
 interface getuserData {
   id?: string;
   name?: string;
+  guildList?: string[];
 }
 
 /** Guild DB */
-const guild_set = (guildId: string, getqdb: getguildData) => new Promise<boolean>(async (res, rej) => {
-  try {
-    for (const key of Object.keys(getqdb)) {
-      await qdb.table("s"+guildId).set(key, (getqdb as any)[key]);
-    }
-    return res(true);
-  } catch (err) {
-    return rej(err);
+const guild_get = (guild: Guild) => new Promise<guildData>(async (res, _rej) => {
+  let get = await qdb.table("guild").get<guildData>("s"+guild.id);
+  if (get) {
+    get.name = guild.name;
+    return res(get);
   }
+  let data: guildData = {
+    id: guild.id,
+    prefix: client.prefix,
+    name: guild.name,
+    role: [],
+    channelId: "",
+    msgId: "",
+    scoreId: "",
+    overLapQueue: [],
+    options: {
+      onetimemax: 50,
+      nexttime: 10
+    }
+  };
+  await qdb.table("guild").set("s"+guild.id, data).catch(() => {});
+  return res(data);
 });
 
-const guild_get = (guild: Guild) => new Promise<guildData>((res, rej) => {
-  qdb.table("s"+guild.id).all().then(async (guildData) => {
-    let output: {[key: string]: any} = {};
-    if (guildData.length == 0 || guildData.some((val) => val.id !== "id")) {
-      let serverlist: string[] = await qdb.get("ids") || [];
-      if (!serverlist.includes(guild.id)) {
-        serverlist.push(guild.id);
-        await qdb.set("ids", serverlist);
-      }
-      let data: guildData = {
-        id: guild.id,
-        prefix: client.prefix,
-        name: "",
-        channelId: "",
-        msgId: "",
-        scoreId: "",
-        role: [],
-        overLapQueue: [],
-        options: {
-          onetimemax: 50,
-          nexttime: 10
-        }
-      };
-      output = data;
-    }
-    for (let val of guildData) {
-      output[val.id] = val.value;
-    }
-    output["name"] = guild.name;
-    await guild_set(guild.id, output as any);
-    return res(output as any);
-  }).catch(rej);
-});
-
-const guild_del = (guildId: string) => new Promise<boolean>((res, rej) => {
-  qdb.table("s"+guildId).deleteAll().then(async () => {
-    let serverlist: string[] = await qdb.get("ids") || [];
-    await qdb.set("ids", serverlist.filter(id => id !== guildId));
+const guild_set = (guild: Guild, getqdb: getguildData) => new Promise<boolean>(async (res, _rej) => {
+  const get = await guild_get(guild);
+  await qdb.table("guild").set("s"+guild.id, {
+    ...get,
+    ...getqdb
+  }).then(() => {
     return res(true);
-  }).catch(rej);
+  }).catch(() => {
+    return res(false);
+  });
 });
 
-const guild_all = () => new Promise<guildData[]>(async (res, rej) => {
-  try {
-    let serverlist: string[] = await qdb.get("ids") || [];
-    let output: guildData[] = [];
-    for (let guildId of serverlist) {
-      let guilddata = await qdb.table("s"+guildId).all();
-      let output2: {[key: string]: any} = {};
-      for (let val of guilddata) {
-        output2[val.id] = val.value;
-      }
-      output.push(output2 as any);
-    }
-    return res(output);
-  } catch (err) {
-    return rej(err);
-  }
+const guild_del = (guildId: string) => new Promise<boolean>(async (res, _rej) => {
+  await qdb.table("guild").delete("s"+guildId).then(() => {
+    return res(true);
+  }).catch(() => {
+    return res(false);
+  });
 });
+
+const guild_all = () => new Promise<guildData[]>(async (res, _rej) => {
+  await qdb.table("guild").all().then((data) => {
+    return res(data.map(val => val.value));
+  }).catch(() => {
+    return res([]);
+  });
+});
+
 
 
 /** User DB */
-const user_set = (guildId: string, userId: string, getqdb: getuserData) => new Promise<boolean>(async (res, rej) => {
-  try {
-    for (const key of Object.keys(getqdb)) {
-      await qdb.table("s"+guildId).table("u"+userId).set(key, (getqdb as any)[key]);
-    }
-    return res(true);
-  } catch (err) {
-    return rej(err);
+const user_get = (guild: Guild, member: GuildMember) => new Promise<userData>(async (res, _rej) => {
+  await guild_get(guild).catch(() => {});
+  let get = await qdb.table("user").get<userData>("s"+member.id);
+  if (get) {
+    if (!get.guildList.includes(guild.id)) get.guildList.push(guild.id);
+    get.name = member.user.tag;
+    return res(get);
   }
+  let data: userData = {
+    id: member.id,
+    name: member.user.tag,
+    guildList: []
+  };
+  await qdb.table("user").set("s"+member.id, data).catch(() => {});
+  return res(data);
 });
 
-const user_get = (guild: Guild, member: GuildMember) => new Promise<userData>(async (res, rej) => {
-  await guild_get(guild).catch(rej);
-  qdb.table("s"+guild.id).table("u"+member.id).all().then(async (userData) => {
-    let output: {[key: string]: any} = {};
-    if (userData.length == 0 || userData.some((val) => val.id !== "id")) {
-      let userlist: string[] = await qdb.table("s"+guild.id).get("idu") || [];
-      if (!userlist.includes(guild.id)) {
-        userlist.push(guild.id);
-        await qdb.table("s"+guild.id).set("idu", userlist);
-      }
-      let data: userData = {
-        id: member.id,
-        name: ""
-      };
-      output = data;
-    }
-    for (let val of userData) {
-      output[val.id] = val.value;
-    }
-    output["name"] = member.nickname || member.user.username;
-    await user_set(guild.id, member.id, output as any);
-    return res(output as any);
-  }).catch(rej);
-});
-
-const user_del = (guildId: string, userId: string) => new Promise<boolean>((res, rej) => {
-  qdb.table("s"+guildId).table("u"+userId).deleteAll().then(async () => {
-    let userlist: string[] = await qdb.table("s"+guildId).get("idu") || [];
-    await qdb.table("s"+guildId).set("idu", userlist.filter(id => id !== userId));
+const user_set = (guild: Guild, member: GuildMember, getqdb: getuserData) => new Promise<boolean>(async (res, _rej) => {
+  const get = await user_get(guild, member);
+  await qdb.table("user").set("s"+member.id, {
+    ...get,
+    ...getqdb
+  }).then(() => {
     return res(true);
-  }).catch(rej);
+  }).catch(() => {
+    return res(false);
+  });
 });
 
-const user_all = (guildId: string) => new Promise<guildData[]>(async (res, rej) => {
-  try {
-    let userlist: string[] = await qdb.table("s"+guildId).get("idu") || [];
-    let output: guildData[] = [];
-    for (let userId of userlist) {
-      let guilddata = await qdb.table("s"+guildId).table("u"+userId).all();
-      let output2: {[key: string]: any} = {};
-      for (let val of guilddata) {
-        output2[val.id] = val.value;
-      }
-      output.push(output2 as any);
+const user_del = (guildId: string, userId: string) => new Promise<boolean>(async (res, _rej) => {
+  await qdb.table("user").get<userData>("s"+userId).then(async (data) => {
+    if (data?.guildList.includes(guildId)) {
+      data.guildList = data.guildList.filter(val => val != guildId);
+      await qdb.table("user").set("s"+userId, data).then(() => {
+        return res(true);
+      }).catch(() => {
+        return res(false);
+      });
     }
-    return res(output);
-  } catch (err) {
-    return rej(err);
-  }
+  }).catch(() => {
+    return res(false);
+  });
+});
+
+const user_all = (guildId: string) => new Promise<userData[]>(async (res, _rej) => {
+  await qdb.table("user").all().then((data) => {
+    return res(data.map(val => val.value).filter((val: userData) => val.guildList.includes(guildId)));
+  }).catch(() => {
+    return res([]);
+  });
 });
 
 export const QDB = {

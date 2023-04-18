@@ -1,7 +1,7 @@
 import "dotenv/config";
-import { QDB } from "../databases/Quickdb";
 import { client, handler } from "..";
 import { Logger } from "../utils/Logger";
+import { QDB } from "../databases/Quickdb";
 import { ChannelType } from "discord.js";
 import { QUIZ_RULE } from "../config/config";
 
@@ -15,7 +15,7 @@ export const onReady = () => {
   Logger.ready(`Activity: ${JSON.stringify(actlist)}`);
   Logger.ready(`로그확인: ${client.debug}`);
 
-  if (process.env.REFRESH_SLASH_COMMAND_ON_READY == "true") handler.registCachedCommands(client);
+  if (process.env.REFRESH_SLASH_COMMAND_ON_READY === "true") handler.registCachedCommands(client);
 
   quizfix();
 
@@ -64,7 +64,7 @@ function quizfix() {
               })
             ]
           });
-          return await QDB.guild.set(guildDB.id, { msgId: msg.id, scoreId: score.id }).then((val) => {
+          return await QDB.guild.set(channel.guild!, { msgId: msg.id, scoreId: score.id }).then((val) => {
             if (val) {
               Logger.ready(`${msg.guild!.name} {\n  fix: 시작 fix 성공\n}`);
               client.getqc(msg.guild!).sendlog(`${msg.guild!.name} {\n  fix: 시작 fix 성공\n}`);
@@ -77,6 +77,6 @@ function quizfix() {
           });
         }
       }
-    })
-  })
+    });
+  });
 }

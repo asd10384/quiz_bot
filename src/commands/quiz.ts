@@ -1,7 +1,7 @@
 import { client } from "../index";
 import { Command } from "../interfaces/Command";
 // import { Logger } from "../utils/Logger";
-import { Message, EmbedBuilder, ApplicationCommandOptionType, ChatInputApplicationCommandData, CommandInteraction, ChannelType, TextChannel } from "discord.js";
+import { Message, EmbedBuilder, ApplicationCommandOptionType, ChatInputApplicationCommandData, CommandInteraction, ChannelType, TextChannel, Guild } from "discord.js";
 import { check_permission as ckper, embed_permission as emper } from "../utils/Permission";
 import { guildData, QDB } from "../databases/Quickdb";
 import { QUIZ_RULE } from "../config/config";
@@ -93,8 +93,7 @@ export default class implements Command {
     }
     if (cmd.name == "중복초기화") {
       if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
-      const guildDB = await QDB.guild.get(interaction.guild!);
-      return await interaction.editReply({ content: await this.overLapReset(guildDB) });
+      return await interaction.editReply({ content: await this.overLapReset(interaction.guild!) });
     }
     if (cmd.name == "fix") {
       if (!(await ckper(interaction))) return await interaction.editReply({ embeds: [ emper ] });
@@ -139,8 +138,7 @@ export default class implements Command {
           })
         ] }).then(m => client.msgdelete(m, 1));
       }
-      const guildDB = await QDB.guild.get(message.guild!);
-      return message.channel.send({ content: await this.overLapReset(guildDB) }).then(m => client.msgdelete(m, 2));
+      return message.channel.send({ content: await this.overLapReset(message.guild!) }).then(m => client.msgdelete(m, 2));
     }
     else if (args[0] == "중지" || args[0] == "종료") {
       return qc.stop();
@@ -201,7 +199,7 @@ export default class implements Command {
         })
       ]
     });
-    return await QDB.guild.set(guildDB.id, {
+    return await QDB.guild.set(message.guild!, {
       channelId: channel.id,
       scoreId: score.id,
       msgId: msg.id
@@ -249,7 +247,7 @@ export default class implements Command {
           })
         ]
       });
-      await QDB.guild.set(guildDB.id, {
+      await QDB.guild.set(message.guild!, {
         channelId: (channel as TextChannel).id,
         scoreId: score.id,
         msgId: msg.id
@@ -258,8 +256,10 @@ export default class implements Command {
     return `fix 실행 완료.`;
   }
 
-  async overLapReset(guildDB: guildData): Promise<string> {
-    const check = await QDB.guild.set(guildDB.id, { overLapQueue: [] });
+  async overLapReset(guild: Guild): Promise<string> {
+    const check = await QDB.guild.set(guild, { overLapQueue: [] });
+    const qc = client.getqc(guild);
+    if (!qc.playing) qc.setMsg();
     if (check) return "초기화 완료";
     return "초기화 실패";
   }
