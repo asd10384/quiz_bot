@@ -1,3 +1,4 @@
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 import { client } from "..";
 import { guildData } from "../databases/Quickdb";
 
@@ -25,3 +26,76 @@ export const QUIZ_RULE = (guildDB: guildData): string => {
   });
   return output;
 }
+
+export const BUTTONS_DEFAULT = () => new ActionRowBuilder<ButtonBuilder>().addComponents(
+  new ButtonBuilder()
+    .setCustomId("quiz-ready")
+    .setLabel("시작하기")
+    .setStyle(ButtonStyle.Success)
+);
+
+export const BUTTONS_READY = () => new ActionRowBuilder<ButtonBuilder>().addComponents(
+  new ButtonBuilder()
+    .setCustomId("quiz-1")
+    .setLabel("1")
+    .setStyle(ButtonStyle.Primary)
+).addComponents(
+  new ButtonBuilder()
+    .setCustomId("quiz-2")
+    .setLabel("2")
+    .setStyle(ButtonStyle.Primary)
+).addComponents(
+  new ButtonBuilder()
+    .setCustomId("quiz-3")
+    .setLabel("3")
+    .setStyle(ButtonStyle.Primary)
+).addComponents(
+  new ButtonBuilder()
+    .setCustomId("quiz-4")
+    .setLabel("4")
+    .setStyle(ButtonStyle.Primary)
+).addComponents(
+  new ButtonBuilder()
+    .setCustomId("quiz-5")
+    .setLabel("5")
+    .setStyle(ButtonStyle.Primary)
+);
+
+export const BUTTONS_READY2 = () => new ActionRowBuilder<ButtonBuilder>().addComponents(
+  new ButtonBuilder()
+    .setCustomId("quiz-left")
+    .setLabel("이전 페이지")
+    .setStyle(ButtonStyle.Secondary)
+).addComponents(
+  new ButtonBuilder()
+    .setCustomId("quiz-stop")
+    .setLabel("퀴즈종료")
+    .setStyle(ButtonStyle.Danger)
+).addComponents(
+  new ButtonBuilder()
+    .setCustomId("quiz-right")
+    .setLabel("다음 페이지")
+    .setStyle(ButtonStyle.Secondary)
+);
+
+export const BUTTONS_START = (disHint: boolean = false, disSkip: boolean = false) => new ActionRowBuilder<ButtonBuilder>().addComponents(
+  new ButtonBuilder()
+    .setCustomId("quiz-hint")
+    .setEmoji({ name: "💡" })
+    .setLabel("힌트")
+    .setStyle(ButtonStyle.Success)
+    .setDisabled(disHint)
+).addComponents(
+  new ButtonBuilder()
+    .setCustomId("quiz-skip")
+    .setEmoji({ name: "⏭️" })
+    .setLabel("스킵")
+    .setStyle(ButtonStyle.Primary)
+    .setDisabled(disSkip)
+).addComponents(
+  new ButtonBuilder()
+    .setCustomId("quiz-stop")
+    .setLabel("퀴즈종료")
+    .setStyle(ButtonStyle.Danger)
+    .setDisabled(disSkip)
+);

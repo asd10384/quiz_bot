@@ -3,7 +3,7 @@ import { client, handler } from "..";
 import { Logger } from "../utils/Logger";
 import { QDB } from "../databases/Quickdb";
 import { ChannelType } from "discord.js";
-import { QUIZ_RULE } from "../config/config";
+import { BUTTONS_DEFAULT, QUIZ_RULE } from "../config/config";
 
 export const onReady = () => {
   if (!client.user) return;
@@ -53,7 +53,8 @@ function quizfix() {
                 image: `https://ytms.netlify.app/defult.png`,
                 footer: { text: `${client.prefix}퀴즈 도움말` }
               })
-            ]
+            ],
+            components: [ BUTTONS_DEFAULT() ]
           });
           const score = await channel.send({
             embeds: [
